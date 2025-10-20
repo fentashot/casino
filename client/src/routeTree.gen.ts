@@ -8,219 +8,302 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-// Import Routes
+import { createFileRoute } from '@tanstack/react-router'
 
-import { Route as rootRoute } from './routes/__root'
-import { Route as AboutImport } from './routes/about'
-import { Route as AuthenticatedImport } from './routes/_authenticated'
-import { Route as AuthenticatedIndexImport } from './routes/_authenticated/index'
-import { Route as AuthenticatedProfileImport } from './routes/_authenticated/profile'
-import { Route as AuthenticatedExpensesImport } from './routes/_authenticated/expenses'
-import { Route as AuthenticatedCreateExpenseImport } from './routes/_authenticated/create-expense'
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedExpensesExpensesRouteImport } from './routes/_authenticated/expenses/_expenses'
+import { Route as AuthenticatedExpensesExpensesTotalRouteImport } from './routes/_authenticated/expenses/_expenses/total'
+import { Route as AuthenticatedExpensesExpensesListRouteImport } from './routes/_authenticated/expenses/_expenses/list'
+import { Route as AuthenticatedExpensesExpensesCreateRouteImport } from './routes/_authenticated/expenses/_expenses/create'
 
-// Create/Update Routes
+const AuthenticatedExpensesRouteImport = createFileRoute(
+  '/_authenticated/expenses',
+)()
 
-const AboutRoute = AboutImport.update({
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const AuthenticatedRoute = AuthenticatedImport.update({
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const AuthenticatedIndexRoute = AuthenticatedIndexImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AuthenticatedRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const AuthenticatedProfileRoute = AuthenticatedProfileImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-
-const AuthenticatedExpensesRoute = AuthenticatedExpensesImport.update({
+const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
   id: '/expenses',
   path: '/expenses',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedExpensesExpensesRoute =
+  AuthenticatedExpensesExpensesRouteImport.update({
+    id: '/_expenses',
+    getParentRoute: () => AuthenticatedExpensesRoute,
+  } as any)
+const AuthenticatedExpensesExpensesTotalRoute =
+  AuthenticatedExpensesExpensesTotalRouteImport.update({
+    id: '/total',
+    path: '/total',
+    getParentRoute: () => AuthenticatedExpensesExpensesRoute,
+  } as any)
+const AuthenticatedExpensesExpensesListRoute =
+  AuthenticatedExpensesExpensesListRouteImport.update({
+    id: '/list',
+    path: '/list',
+    getParentRoute: () => AuthenticatedExpensesExpensesRoute,
+  } as any)
+const AuthenticatedExpensesExpensesCreateRoute =
+  AuthenticatedExpensesExpensesCreateRouteImport.update({
+    id: '/create',
+    path: '/create',
+    getParentRoute: () => AuthenticatedExpensesExpensesRoute,
+  } as any)
 
-const AuthenticatedCreateExpenseRoute = AuthenticatedCreateExpenseImport.update(
-  {
-    id: '/create-expense',
-    path: '/create-expense',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any,
-)
-
-// Populate the FileRoutesByPath interface
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/expenses': typeof AuthenticatedExpensesExpensesRouteWithChildren
+  '/expenses/create': typeof AuthenticatedExpensesExpensesCreateRoute
+  '/expenses/list': typeof AuthenticatedExpensesExpensesListRoute
+  '/expenses/total': typeof AuthenticatedExpensesExpensesTotalRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/expenses': typeof AuthenticatedExpensesExpensesRouteWithChildren
+  '/expenses/create': typeof AuthenticatedExpensesExpensesCreateRoute
+  '/expenses/list': typeof AuthenticatedExpensesExpensesListRoute
+  '/expenses/total': typeof AuthenticatedExpensesExpensesTotalRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/about': typeof AboutRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/expenses': typeof AuthenticatedExpensesRouteWithChildren
+  '/_authenticated/expenses/_expenses': typeof AuthenticatedExpensesExpensesRouteWithChildren
+  '/_authenticated/expenses/_expenses/create': typeof AuthenticatedExpensesExpensesCreateRoute
+  '/_authenticated/expenses/_expenses/list': typeof AuthenticatedExpensesExpensesListRoute
+  '/_authenticated/expenses/_expenses/total': typeof AuthenticatedExpensesExpensesTotalRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/login'
+    | '/register'
+    | '/profile'
+    | '/expenses'
+    | '/expenses/create'
+    | '/expenses/list'
+    | '/expenses/total'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/about'
+    | '/login'
+    | '/register'
+    | '/profile'
+    | '/expenses'
+    | '/expenses/create'
+    | '/expenses/list'
+    | '/expenses/total'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/about'
+    | '/login'
+    | '/register'
+    | '/_authenticated/profile'
+    | '/_authenticated/expenses'
+    | '/_authenticated/expenses/_expenses'
+    | '/_authenticated/expenses/_expenses/create'
+    | '/_authenticated/expenses/_expenses/list'
+    | '/_authenticated/expenses/_expenses/total'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AboutRoute: typeof AboutRoute
+  LoginRoute: typeof LoginRoute
+  RegisterRoute: typeof RegisterRoute
+}
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof AuthenticatedImport
-      parentRoute: typeof rootRoute
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/about': {
       id: '/about'
       path: '/about'
       fullPath: '/about'
-      preLoaderRoute: typeof AboutImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/create-expense': {
-      id: '/_authenticated/create-expense'
-      path: '/create-expense'
-      fullPath: '/create-expense'
-      preLoaderRoute: typeof AuthenticatedCreateExpenseImport
-      parentRoute: typeof AuthenticatedImport
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/expenses': {
       id: '/_authenticated/expenses'
       path: '/expenses'
       fullPath: '/expenses'
-      preLoaderRoute: typeof AuthenticatedExpensesImport
-      parentRoute: typeof AuthenticatedImport
+      preLoaderRoute: typeof AuthenticatedExpensesRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
       fullPath: '/profile'
-      preLoaderRoute: typeof AuthenticatedProfileImport
-      parentRoute: typeof AuthenticatedImport
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/': {
-      id: '/_authenticated/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedIndexImport
-      parentRoute: typeof AuthenticatedImport
+    '/_authenticated/expenses/_expenses': {
+      id: '/_authenticated/expenses/_expenses'
+      path: '/expenses'
+      fullPath: '/expenses'
+      preLoaderRoute: typeof AuthenticatedExpensesExpensesRouteImport
+      parentRoute: typeof AuthenticatedExpensesRoute
+    }
+    '/_authenticated/expenses/_expenses/total': {
+      id: '/_authenticated/expenses/_expenses/total'
+      path: '/total'
+      fullPath: '/expenses/total'
+      preLoaderRoute: typeof AuthenticatedExpensesExpensesTotalRouteImport
+      parentRoute: typeof AuthenticatedExpensesExpensesRoute
+    }
+    '/_authenticated/expenses/_expenses/list': {
+      id: '/_authenticated/expenses/_expenses/list'
+      path: '/list'
+      fullPath: '/expenses/list'
+      preLoaderRoute: typeof AuthenticatedExpensesExpensesListRouteImport
+      parentRoute: typeof AuthenticatedExpensesExpensesRoute
+    }
+    '/_authenticated/expenses/_expenses/create': {
+      id: '/_authenticated/expenses/_expenses/create'
+      path: '/create'
+      fullPath: '/expenses/create'
+      preLoaderRoute: typeof AuthenticatedExpensesExpensesCreateRouteImport
+      parentRoute: typeof AuthenticatedExpensesExpensesRoute
     }
   }
 }
 
-// Create and export the route tree
+interface AuthenticatedExpensesExpensesRouteChildren {
+  AuthenticatedExpensesExpensesCreateRoute: typeof AuthenticatedExpensesExpensesCreateRoute
+  AuthenticatedExpensesExpensesListRoute: typeof AuthenticatedExpensesExpensesListRoute
+  AuthenticatedExpensesExpensesTotalRoute: typeof AuthenticatedExpensesExpensesTotalRoute
+}
+
+const AuthenticatedExpensesExpensesRouteChildren: AuthenticatedExpensesExpensesRouteChildren =
+  {
+    AuthenticatedExpensesExpensesCreateRoute:
+      AuthenticatedExpensesExpensesCreateRoute,
+    AuthenticatedExpensesExpensesListRoute:
+      AuthenticatedExpensesExpensesListRoute,
+    AuthenticatedExpensesExpensesTotalRoute:
+      AuthenticatedExpensesExpensesTotalRoute,
+  }
+
+const AuthenticatedExpensesExpensesRouteWithChildren =
+  AuthenticatedExpensesExpensesRoute._addFileChildren(
+    AuthenticatedExpensesExpensesRouteChildren,
+  )
+
+interface AuthenticatedExpensesRouteChildren {
+  AuthenticatedExpensesExpensesRoute: typeof AuthenticatedExpensesExpensesRouteWithChildren
+}
+
+const AuthenticatedExpensesRouteChildren: AuthenticatedExpensesRouteChildren = {
+  AuthenticatedExpensesExpensesRoute:
+    AuthenticatedExpensesExpensesRouteWithChildren,
+}
+
+const AuthenticatedExpensesRouteWithChildren =
+  AuthenticatedExpensesRoute._addFileChildren(
+    AuthenticatedExpensesRouteChildren,
+  )
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedCreateExpenseRoute: typeof AuthenticatedCreateExpenseRoute
-  AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRouteWithChildren
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedCreateExpenseRoute: AuthenticatedCreateExpenseRoute,
-  AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
-  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedExpensesRoute: AuthenticatedExpensesRouteWithChildren,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
-export interface FileRoutesByFullPath {
-  '': typeof AuthenticatedRouteWithChildren
-  '/about': typeof AboutRoute
-  '/create-expense': typeof AuthenticatedCreateExpenseRoute
-  '/expenses': typeof AuthenticatedExpensesRoute
-  '/profile': typeof AuthenticatedProfileRoute
-  '/': typeof AuthenticatedIndexRoute
-}
-
-export interface FileRoutesByTo {
-  '/about': typeof AboutRoute
-  '/create-expense': typeof AuthenticatedCreateExpenseRoute
-  '/expenses': typeof AuthenticatedExpensesRoute
-  '/profile': typeof AuthenticatedProfileRoute
-  '/': typeof AuthenticatedIndexRoute
-}
-
-export interface FileRoutesById {
-  __root__: typeof rootRoute
-  '/_authenticated': typeof AuthenticatedRouteWithChildren
-  '/about': typeof AboutRoute
-  '/_authenticated/create-expense': typeof AuthenticatedCreateExpenseRoute
-  '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
-  '/_authenticated/profile': typeof AuthenticatedProfileRoute
-  '/_authenticated/': typeof AuthenticatedIndexRoute
-}
-
-export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '' | '/about' | '/create-expense' | '/expenses' | '/profile' | '/'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/about' | '/create-expense' | '/expenses' | '/profile' | '/'
-  id:
-    | '__root__'
-    | '/_authenticated'
-    | '/about'
-    | '/_authenticated/create-expense'
-    | '/_authenticated/expenses'
-    | '/_authenticated/profile'
-    | '/_authenticated/'
-  fileRoutesById: FileRoutesById
-}
-
-export interface RootRouteChildren {
-  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
-  AboutRoute: typeof AboutRoute
-}
-
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AboutRoute: AboutRoute,
+  LoginRoute: LoginRoute,
+  RegisterRoute: RegisterRoute,
 }
-
-export const routeTree = rootRoute
+export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-/* ROUTE_MANIFEST_START
-{
-  "routes": {
-    "__root__": {
-      "filePath": "__root.tsx",
-      "children": [
-        "/_authenticated",
-        "/about"
-      ]
-    },
-    "/_authenticated": {
-      "filePath": "_authenticated.tsx",
-      "children": [
-        "/_authenticated/create-expense",
-        "/_authenticated/expenses",
-        "/_authenticated/profile",
-        "/_authenticated/"
-      ]
-    },
-    "/about": {
-      "filePath": "about.tsx"
-    },
-    "/_authenticated/create-expense": {
-      "filePath": "_authenticated/create-expense.tsx",
-      "parent": "/_authenticated"
-    },
-    "/_authenticated/expenses": {
-      "filePath": "_authenticated/expenses.tsx",
-      "parent": "/_authenticated"
-    },
-    "/_authenticated/profile": {
-      "filePath": "_authenticated/profile.tsx",
-      "parent": "/_authenticated"
-    },
-    "/_authenticated/": {
-      "filePath": "_authenticated/index.tsx",
-      "parent": "/_authenticated"
-    }
-  }
-}
-ROUTE_MANIFEST_END */

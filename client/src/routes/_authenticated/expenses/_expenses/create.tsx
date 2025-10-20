@@ -10,7 +10,7 @@ import { createExpenseSchema } from '@server/zodTypes'
 import { Calendar } from '@/components/ui/calendar'
 import { useQueryClient } from '@tanstack/react-query'
 
-export const Route = createFileRoute('/_authenticated/create-expense')({
+export const Route = createFileRoute('/_authenticated/expenses/_expenses/create')({
   component: CreateExpense,
 })
 
@@ -54,7 +54,7 @@ function CreateExpense() {
         expenses: [...existingExpenses.expenses, newExpense]
       }))
 
-      navigate({ to: '/expenses' })
+      navigate({ to: '/expenses/list' })
     },
   })
   return (

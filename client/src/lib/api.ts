@@ -6,20 +6,20 @@ const client = hc<ApiRoutes>("/")
 
 export const api = client.api
 
-async function getCurrentUser() {
-  const res = await api.me.$get()
-  if (!res.ok) {
-    throw new Error('Failed to get current user')
-  }
-  const data = await res.json()
-  return data
-}
+// async function getCurrentUser() {
+//   const res = await api.me.$get()
+//   if (!res.ok) {
+//     throw new Error('Failed to get current user')
+//   }
+//   const data = await res.json()
+//   return data
+//}
 
-export const getCurrentUserQueryOptions = queryOptions({
-  queryKey: ['get-current-user'],
-  queryFn: getCurrentUser,
-  staleTime: Infinity,
-})
+// export const getCurrentUserQueryOptions = queryOptions({
+//   queryKey: ['get-current-user'],
+//   queryFn: getCurrentUser,
+//   staleTime: Infinity,
+// })
 
 export async function getAllExpenses() {
   const res = await api.expenses.$get()
@@ -35,3 +35,15 @@ export const getAllExpensesQueryOptions = queryOptions({
   queryFn: getAllExpenses,
   staleTime: 1000 * 60 * 5,
 })
+
+export async function getTotalSpent() {
+    const res = await api.expenses.total.$get();
+    const data = await res.json();
+    return data;
+}
+
+export const getTotalSpentQueryOptions = queryOptions({
+    queryKey: ['get-total-spent'],
+    queryFn: getTotalSpent,
+    staleTime: 1000 * 60 * 5,
+});
