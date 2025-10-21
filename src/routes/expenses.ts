@@ -7,21 +7,25 @@ import { eq, sql } from "drizzle-orm";
 import { createExpenseSchema } from "../zodTypes";
 import { createMiddleware } from "hono/factory";
 import { auth } from "../auth";
+import { Context } from "hono";
 
-interface Vars {
+type User = typeof auth.$Infer.Session.user;
+type Session = typeof auth.$Infer.Session;
+
+export interface Vars {
     Variables: {
-        user: typeof auth.$Infer.Session.user | null;
-        session: typeof auth.$Infer.Session | null;
+        user: User | null;
+        session: Session | null;
     };
 }
 
 export const expensesRoutes = new Hono<Vars>()
     //GET /api/expenses for current logged in user
     .get("/", async (c) => {
-        const user = c.get("user");
+        const { id } = c.get("user") as User;
 
         const expenses = await db.query.expenseTable.findMany({
-            where: eq(expenseTable.userId, user.id),
+            where: eq(expenseTable.userId, id),
         });
 
         return c.json({ expenses });
@@ -29,13 +33,14 @@ export const expensesRoutes = new Hono<Vars>()
     //POST /api/expenses to create a new expense
     .post("/", zValidator("json", createExpenseSchema), async (c) => {
         const expense = c.req.valid("json");
+        const { id } = c.get("user") as User;
 
         const newExpense = {
             title: expense.title,
             amount: expense.amount.toString(),
             date: expense.date,
             createdAt: new Date().toISOString(),
-            userId: c.get("user").id,
+            userId: id,
         };
 
         const result = await db
@@ -59,10 +64,12 @@ export const expensesRoutes = new Hono<Vars>()
     })
     //GET /api/expenses/total to get the total amount of expenses
     .get("/total", async (c) => {
+        const { id } = c.get("user") as User;
+
         const total = await db
             .select({ sum: sql`SUM(amount)` })
             .from(expenseTable)
-            .where(eq(expenseTable.userId, c.get("user").id))
+            .where(eq(expenseTable.userId, id))
             .then((result) => result[0].sum ?? 0);
         return c.json({ total } as { total: number });
     });

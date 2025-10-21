@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { Loader2, X } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { signUp } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { redirect, useNavigate } from "@tanstack/react-router";
@@ -25,23 +25,10 @@ export default function RegisterForm() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [passwordConfirmation, setPasswordConfirmation] = useState("");
-    const [image, setImage] = useState<File | null>(null);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setImage(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
 
     return (
         <Card className="z-50 rounded-md rounded-t-none min-w-md">
@@ -158,9 +145,6 @@ export default function RegisterForm() {
                                 email,
                                 password,
                                 name: `${firstName} ${lastName}`,
-                                image: image
-                                    ? await convertImageToBase64(image)
-                                    : "",
                                 callbackURL: "/dashboard",
                                 fetchOptions: {
                                     onResponse: () => {
@@ -200,13 +184,4 @@ export default function RegisterForm() {
             </CardFooter>
         </Card>
     );
-}
-
-async function convertImageToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
 }

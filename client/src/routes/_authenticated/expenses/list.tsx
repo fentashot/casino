@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getAllExpensesQueryOptions } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export const Route = createFileRoute("/_authenticated/expenses/_expenses/list")({
+export const Route = createFileRoute("/_authenticated/expenses/list")({
     component: Expenses,
 });
 

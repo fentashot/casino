@@ -1,15 +1,13 @@
-import { api, getTotalSpentQueryOptions } from "@/lib/api";
+import { getTotalSpentQueryOptions } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
     Card,
-    CardContent,
     CardDescription,
-    CardHeader,
     CardTitle,
 } from "@/components/ui/card";
 
-export const Route = createFileRoute("/_authenticated/expenses/_expenses/total")({
+export const Route = createFileRoute("/_authenticated/expenses/total")({
     component: Index,
 });
 

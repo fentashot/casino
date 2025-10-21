@@ -5,16 +5,26 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
 import type { FieldApi } from '@tanstack/react-form'
 import { Loader2Icon } from 'lucide-react'
-import { api, getAllExpensesQueryOptions } from '@/lib/api'
+import { api, getAllExpensesQueryOptions, getTotalSpentQueryOptions } from '@/lib/api'
 import { createExpenseSchema } from '@server/zodTypes'
 import { Calendar } from '@/components/ui/calendar'
 import { useQueryClient } from '@tanstack/react-query'
 
-export const Route = createFileRoute('/_authenticated/expenses/_expenses/create')({
+export const Route = createFileRoute('/_authenticated/expenses/create')({
   component: CreateExpense,
 })
 
-function FieldInfo({ field }: { field: FieldApi<any, any, any, any> }) {
+type FormValues = {
+  title: string
+  amount: number
+  date: string
+}
+
+interface CustomFieldInfoProps<TName extends keyof FormValues = keyof FormValues> {
+  field: FieldApi<FormValues, TName>
+}
+
+function FieldInfo<TName extends keyof FormValues>({ field }: CustomFieldInfoProps<TName>) {
   return (
     <>
       {field.state.meta.isTouched && field.state.meta.errors.length ? (
@@ -53,6 +63,12 @@ function CreateExpense() {
         ...existingExpenses,
         expenses: [...existingExpenses.expenses, newExpense]
       }))
+
+      queryClient.setQueryData(getTotalSpentQueryOptions.queryKey, (oldData?: { total: number }) => {
+        return {
+          total: (oldData?.total || 0) + Number(newExpense.amount)
+        }
+      })
 
       navigate({ to: '/expenses/list' })
     },

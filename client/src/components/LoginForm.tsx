@@ -7,14 +7,12 @@ import {
     CardHeader,
     CardTitle,
     CardDescription,
-    CardFooter,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { Loader2, Key } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Link, redirect, useNavigate } from "@tanstack/react-router";
 import { signIn } from "@/lib/auth-client";
 import { useAuth } from "@/auth-context";
 
@@ -22,9 +20,7 @@ export default function LoginForm() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false);
 
-    const navigate = useNavigate();
     const { refreshSession } = useAuth();
 
     return (
@@ -82,10 +78,10 @@ export default function LoginForm() {
                                     password,
                                 },
                                 {
-                                    onRequest: (ctx) => {
+                                    onRequest: () => {
                                         setLoading(true);
                                     },
-                                    onResponse: (ctx) => {
+                                    onResponse: () => {
                                         setLoading(false);
                                     },
                                     onError: (ctx) => {
@@ -155,7 +151,7 @@ export default function LoginForm() {
                                         callbackURL: "/expenses/total",
                                     },
                                     {
-                                        onRequest: (ctx) => {
+                                        onRequest: () => {
                                             setLoading(true);
                                         },
                                     }
@@ -186,7 +182,7 @@ export default function LoginForm() {
                                         callbackURL: "/expenses/total",
                                     },
                                     {
-                                        onRequest: (ctx) => {
+                                        onRequest: () => {
                                             setLoading(true);
                                         },
                                     }

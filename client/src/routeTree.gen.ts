@@ -8,8 +8,6 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { createFileRoute } from '@tanstack/react-router'
-
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
@@ -17,14 +15,11 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
-import { Route as AuthenticatedExpensesExpensesRouteImport } from './routes/_authenticated/expenses/_expenses'
-import { Route as AuthenticatedExpensesExpensesTotalRouteImport } from './routes/_authenticated/expenses/_expenses/total'
-import { Route as AuthenticatedExpensesExpensesListRouteImport } from './routes/_authenticated/expenses/_expenses/list'
-import { Route as AuthenticatedExpensesExpensesCreateRouteImport } from './routes/_authenticated/expenses/_expenses/create'
-
-const AuthenticatedExpensesRouteImport = createFileRoute(
-  '/_authenticated/expenses',
-)()
+import { Route as AuthenticatedExpensesRouteRouteImport } from './routes/_authenticated/expenses/route'
+import { Route as AuthenticatedCasinoRouteRouteImport } from './routes/_authenticated/casino/route'
+import { Route as AuthenticatedExpensesTotalRouteImport } from './routes/_authenticated/expenses/total'
+import { Route as AuthenticatedExpensesListRouteImport } from './routes/_authenticated/expenses/list'
+import { Route as AuthenticatedExpensesCreateRouteImport } from './routes/_authenticated/expenses/create'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -50,38 +45,40 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
-  id: '/expenses',
-  path: '/expenses',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedExpensesExpensesRoute =
-  AuthenticatedExpensesExpensesRouteImport.update({
-    id: '/_expenses',
-    getParentRoute: () => AuthenticatedExpensesRoute,
+const AuthenticatedExpensesRouteRoute =
+  AuthenticatedExpensesRouteRouteImport.update({
+    id: '/expenses',
+    path: '/expenses',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedExpensesExpensesTotalRoute =
-  AuthenticatedExpensesExpensesTotalRouteImport.update({
+const AuthenticatedCasinoRouteRoute =
+  AuthenticatedCasinoRouteRouteImport.update({
+    id: '/casino',
+    path: '/casino',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedExpensesTotalRoute =
+  AuthenticatedExpensesTotalRouteImport.update({
     id: '/total',
     path: '/total',
-    getParentRoute: () => AuthenticatedExpensesExpensesRoute,
+    getParentRoute: () => AuthenticatedExpensesRouteRoute,
   } as any)
-const AuthenticatedExpensesExpensesListRoute =
-  AuthenticatedExpensesExpensesListRouteImport.update({
+const AuthenticatedExpensesListRoute =
+  AuthenticatedExpensesListRouteImport.update({
     id: '/list',
     path: '/list',
-    getParentRoute: () => AuthenticatedExpensesExpensesRoute,
+    getParentRoute: () => AuthenticatedExpensesRouteRoute,
   } as any)
-const AuthenticatedExpensesExpensesCreateRoute =
-  AuthenticatedExpensesExpensesCreateRouteImport.update({
+const AuthenticatedExpensesCreateRoute =
+  AuthenticatedExpensesCreateRouteImport.update({
     id: '/create',
     path: '/create',
-    getParentRoute: () => AuthenticatedExpensesExpensesRoute,
+    getParentRoute: () => AuthenticatedExpensesRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -89,22 +86,24 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/casino': typeof AuthenticatedCasinoRouteRoute
+  '/expenses': typeof AuthenticatedExpensesRouteRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
-  '/expenses': typeof AuthenticatedExpensesExpensesRouteWithChildren
-  '/expenses/create': typeof AuthenticatedExpensesExpensesCreateRoute
-  '/expenses/list': typeof AuthenticatedExpensesExpensesListRoute
-  '/expenses/total': typeof AuthenticatedExpensesExpensesTotalRoute
+  '/expenses/create': typeof AuthenticatedExpensesCreateRoute
+  '/expenses/list': typeof AuthenticatedExpensesListRoute
+  '/expenses/total': typeof AuthenticatedExpensesTotalRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/casino': typeof AuthenticatedCasinoRouteRoute
+  '/expenses': typeof AuthenticatedExpensesRouteRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
-  '/expenses': typeof AuthenticatedExpensesExpensesRouteWithChildren
-  '/expenses/create': typeof AuthenticatedExpensesExpensesCreateRoute
-  '/expenses/list': typeof AuthenticatedExpensesExpensesListRoute
-  '/expenses/total': typeof AuthenticatedExpensesExpensesTotalRoute
+  '/expenses/create': typeof AuthenticatedExpensesCreateRoute
+  '/expenses/list': typeof AuthenticatedExpensesListRoute
+  '/expenses/total': typeof AuthenticatedExpensesTotalRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -113,12 +112,12 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/_authenticated/casino': typeof AuthenticatedCasinoRouteRoute
+  '/_authenticated/expenses': typeof AuthenticatedExpensesRouteRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
-  '/_authenticated/expenses': typeof AuthenticatedExpensesRouteWithChildren
-  '/_authenticated/expenses/_expenses': typeof AuthenticatedExpensesExpensesRouteWithChildren
-  '/_authenticated/expenses/_expenses/create': typeof AuthenticatedExpensesExpensesCreateRoute
-  '/_authenticated/expenses/_expenses/list': typeof AuthenticatedExpensesExpensesListRoute
-  '/_authenticated/expenses/_expenses/total': typeof AuthenticatedExpensesExpensesTotalRoute
+  '/_authenticated/expenses/create': typeof AuthenticatedExpensesCreateRoute
+  '/_authenticated/expenses/list': typeof AuthenticatedExpensesListRoute
+  '/_authenticated/expenses/total': typeof AuthenticatedExpensesTotalRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -127,8 +126,9 @@ export interface FileRouteTypes {
     | '/about'
     | '/login'
     | '/register'
-    | '/profile'
+    | '/casino'
     | '/expenses'
+    | '/profile'
     | '/expenses/create'
     | '/expenses/list'
     | '/expenses/total'
@@ -138,8 +138,9 @@ export interface FileRouteTypes {
     | '/about'
     | '/login'
     | '/register'
-    | '/profile'
+    | '/casino'
     | '/expenses'
+    | '/profile'
     | '/expenses/create'
     | '/expenses/list'
     | '/expenses/total'
@@ -150,12 +151,12 @@ export interface FileRouteTypes {
     | '/about'
     | '/login'
     | '/register'
-    | '/_authenticated/profile'
+    | '/_authenticated/casino'
     | '/_authenticated/expenses'
-    | '/_authenticated/expenses/_expenses'
-    | '/_authenticated/expenses/_expenses/create'
-    | '/_authenticated/expenses/_expenses/list'
-    | '/_authenticated/expenses/_expenses/total'
+    | '/_authenticated/profile'
+    | '/_authenticated/expenses/create'
+    | '/_authenticated/expenses/list'
+    | '/_authenticated/expenses/total'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -203,13 +204,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/expenses': {
-      id: '/_authenticated/expenses'
-      path: '/expenses'
-      fullPath: '/expenses'
-      preLoaderRoute: typeof AuthenticatedExpensesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -217,80 +211,72 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/expenses/_expenses': {
-      id: '/_authenticated/expenses/_expenses'
+    '/_authenticated/expenses': {
+      id: '/_authenticated/expenses'
       path: '/expenses'
       fullPath: '/expenses'
-      preLoaderRoute: typeof AuthenticatedExpensesExpensesRouteImport
-      parentRoute: typeof AuthenticatedExpensesRoute
+      preLoaderRoute: typeof AuthenticatedExpensesRouteRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/expenses/_expenses/total': {
-      id: '/_authenticated/expenses/_expenses/total'
+    '/_authenticated/casino': {
+      id: '/_authenticated/casino'
+      path: '/casino'
+      fullPath: '/casino'
+      preLoaderRoute: typeof AuthenticatedCasinoRouteRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/expenses/total': {
+      id: '/_authenticated/expenses/total'
       path: '/total'
       fullPath: '/expenses/total'
-      preLoaderRoute: typeof AuthenticatedExpensesExpensesTotalRouteImport
-      parentRoute: typeof AuthenticatedExpensesExpensesRoute
+      preLoaderRoute: typeof AuthenticatedExpensesTotalRouteImport
+      parentRoute: typeof AuthenticatedExpensesRouteRoute
     }
-    '/_authenticated/expenses/_expenses/list': {
-      id: '/_authenticated/expenses/_expenses/list'
+    '/_authenticated/expenses/list': {
+      id: '/_authenticated/expenses/list'
       path: '/list'
       fullPath: '/expenses/list'
-      preLoaderRoute: typeof AuthenticatedExpensesExpensesListRouteImport
-      parentRoute: typeof AuthenticatedExpensesExpensesRoute
+      preLoaderRoute: typeof AuthenticatedExpensesListRouteImport
+      parentRoute: typeof AuthenticatedExpensesRouteRoute
     }
-    '/_authenticated/expenses/_expenses/create': {
-      id: '/_authenticated/expenses/_expenses/create'
+    '/_authenticated/expenses/create': {
+      id: '/_authenticated/expenses/create'
       path: '/create'
       fullPath: '/expenses/create'
-      preLoaderRoute: typeof AuthenticatedExpensesExpensesCreateRouteImport
-      parentRoute: typeof AuthenticatedExpensesExpensesRoute
+      preLoaderRoute: typeof AuthenticatedExpensesCreateRouteImport
+      parentRoute: typeof AuthenticatedExpensesRouteRoute
     }
   }
 }
 
-interface AuthenticatedExpensesExpensesRouteChildren {
-  AuthenticatedExpensesExpensesCreateRoute: typeof AuthenticatedExpensesExpensesCreateRoute
-  AuthenticatedExpensesExpensesListRoute: typeof AuthenticatedExpensesExpensesListRoute
-  AuthenticatedExpensesExpensesTotalRoute: typeof AuthenticatedExpensesExpensesTotalRoute
+interface AuthenticatedExpensesRouteRouteChildren {
+  AuthenticatedExpensesCreateRoute: typeof AuthenticatedExpensesCreateRoute
+  AuthenticatedExpensesListRoute: typeof AuthenticatedExpensesListRoute
+  AuthenticatedExpensesTotalRoute: typeof AuthenticatedExpensesTotalRoute
 }
 
-const AuthenticatedExpensesExpensesRouteChildren: AuthenticatedExpensesExpensesRouteChildren =
+const AuthenticatedExpensesRouteRouteChildren: AuthenticatedExpensesRouteRouteChildren =
   {
-    AuthenticatedExpensesExpensesCreateRoute:
-      AuthenticatedExpensesExpensesCreateRoute,
-    AuthenticatedExpensesExpensesListRoute:
-      AuthenticatedExpensesExpensesListRoute,
-    AuthenticatedExpensesExpensesTotalRoute:
-      AuthenticatedExpensesExpensesTotalRoute,
+    AuthenticatedExpensesCreateRoute: AuthenticatedExpensesCreateRoute,
+    AuthenticatedExpensesListRoute: AuthenticatedExpensesListRoute,
+    AuthenticatedExpensesTotalRoute: AuthenticatedExpensesTotalRoute,
   }
 
-const AuthenticatedExpensesExpensesRouteWithChildren =
-  AuthenticatedExpensesExpensesRoute._addFileChildren(
-    AuthenticatedExpensesExpensesRouteChildren,
-  )
-
-interface AuthenticatedExpensesRouteChildren {
-  AuthenticatedExpensesExpensesRoute: typeof AuthenticatedExpensesExpensesRouteWithChildren
-}
-
-const AuthenticatedExpensesRouteChildren: AuthenticatedExpensesRouteChildren = {
-  AuthenticatedExpensesExpensesRoute:
-    AuthenticatedExpensesExpensesRouteWithChildren,
-}
-
-const AuthenticatedExpensesRouteWithChildren =
-  AuthenticatedExpensesRoute._addFileChildren(
-    AuthenticatedExpensesRouteChildren,
+const AuthenticatedExpensesRouteRouteWithChildren =
+  AuthenticatedExpensesRouteRoute._addFileChildren(
+    AuthenticatedExpensesRouteRouteChildren,
   )
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedCasinoRouteRoute: typeof AuthenticatedCasinoRouteRoute
+  AuthenticatedExpensesRouteRoute: typeof AuthenticatedExpensesRouteRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
-  AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRouteWithChildren
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedCasinoRouteRoute: AuthenticatedCasinoRouteRoute,
+  AuthenticatedExpensesRouteRoute: AuthenticatedExpensesRouteRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
-  AuthenticatedExpensesRoute: AuthenticatedExpensesRouteWithChildren,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
