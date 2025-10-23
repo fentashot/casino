@@ -15,6 +15,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedAppsRouteImport } from './routes/_authenticated/apps'
 import { Route as AuthenticatedExpensesRouteRouteImport } from './routes/_authenticated/expenses/route'
 import { Route as AuthenticatedCasinoRouteRouteImport } from './routes/_authenticated/casino/route'
 import { Route as AuthenticatedExpensesTotalRouteImport } from './routes/_authenticated/expenses/total'
@@ -49,6 +50,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAppsRoute = AuthenticatedAppsRouteImport.update({
+  id: '/apps',
+  path: '/apps',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedExpensesRouteRoute =
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/casino': typeof AuthenticatedCasinoRouteRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRouteRouteWithChildren
+  '/apps': typeof AuthenticatedAppsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/casino/roulette': typeof AuthenticatedCasinoRouletteRoute
   '/expenses/create': typeof AuthenticatedExpensesCreateRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/casino': typeof AuthenticatedCasinoRouteRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRouteRouteWithChildren
+  '/apps': typeof AuthenticatedAppsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/casino/roulette': typeof AuthenticatedCasinoRouletteRoute
   '/expenses/create': typeof AuthenticatedExpensesCreateRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/_authenticated/casino': typeof AuthenticatedCasinoRouteRouteWithChildren
   '/_authenticated/expenses': typeof AuthenticatedExpensesRouteRouteWithChildren
+  '/_authenticated/apps': typeof AuthenticatedAppsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/casino/roulette': typeof AuthenticatedCasinoRouletteRoute
   '/_authenticated/expenses/create': typeof AuthenticatedExpensesCreateRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/casino'
     | '/expenses'
+    | '/apps'
     | '/profile'
     | '/casino/roulette'
     | '/expenses/create'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/casino'
     | '/expenses'
+    | '/apps'
     | '/profile'
     | '/casino/roulette'
     | '/expenses/create'
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/_authenticated/casino'
     | '/_authenticated/expenses'
+    | '/_authenticated/apps'
     | '/_authenticated/profile'
     | '/_authenticated/casino/roulette'
     | '/_authenticated/expenses/create'
@@ -222,6 +234,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/apps': {
+      id: '/_authenticated/apps'
+      path: '/apps'
+      fullPath: '/apps'
+      preLoaderRoute: typeof AuthenticatedAppsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/expenses': {
@@ -304,12 +323,14 @@ const AuthenticatedExpensesRouteRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedCasinoRouteRoute: typeof AuthenticatedCasinoRouteRouteWithChildren
   AuthenticatedExpensesRouteRoute: typeof AuthenticatedExpensesRouteRouteWithChildren
+  AuthenticatedAppsRoute: typeof AuthenticatedAppsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCasinoRouteRoute: AuthenticatedCasinoRouteRouteWithChildren,
   AuthenticatedExpensesRouteRoute: AuthenticatedExpensesRouteRouteWithChildren,
+  AuthenticatedAppsRoute: AuthenticatedAppsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
 }
 

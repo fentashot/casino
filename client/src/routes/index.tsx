@@ -1,7 +1,15 @@
 import { Button } from "@/components/ui/button";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
+    beforeLoad: ({ context }) => {
+        // Redirect if already authenticated
+        if (context.auth.isAuthenticated) {
+            throw redirect({
+                to: "/apps",
+            });
+        }
+    },
     component: RouteComponent,
 });
 
@@ -16,7 +24,7 @@ function RouteComponent() {
                     Log in
                 </Button>
                 <Button onClick={() => navigate({ to: "/register" })}>
-                    Register    
+                    Register
                 </Button>
             </div>
         </div>

@@ -80,7 +80,7 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 420, targe
     // finalny absolutny kąt: obecny + pełne obroty + dodatnia delta
     const finalRotation = totalRotationRef.current + fullRotations * 360 + deltaToDesired
 
-    const duration = 4.8 // stały czas, żeby zawsze czuć te same obroty
+    const duration = 2.8 // default 4.8s
 
     // ticki/prosty dźwięk
     const spinDegrees = finalRotation - totalRotationRef.current
@@ -96,7 +96,7 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 420, targe
     // klucz: animujemy do WIĘKSZEGO absolutnego kąta (Framer nie wybierze krótszej ścieżki)
     await controls.start(
       { rotate: finalRotation },
-      { duration, ease: [0.22, 1, 0.36, 1] }
+      { duration, ease: [0.22, 0.61, 0.36, 1] } 
     )
 
     if (tickIntervalRef.current) {
@@ -154,7 +154,7 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 420, targe
           height: 0,
           borderLeft: '8px solid transparent',
           borderRight: '8px solid transparent',
-          borderBottom: '16.5px solid #ccc',
+          borderBottom: '16.5px solid #ffbf00',
           transform: 'rotate(180deg)'
         }} />
       </div>
@@ -221,9 +221,64 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 420, targe
 
 
             {/* overlay circle for shadow effect */}
-            <circle r={radius / 1.22} fill="black" fillOpacity={0.45} />
+            <circle r={radius / 1.22} fill="black" fillOpacity={0.35} />
             <circle r={radius / 1.61} fill="#0C0A08" fillOpacity={1} />
+            <rect
+              width={radius / 18}
+              height={radius - 50}
+              x={-(radius / 36)}
+              y={-(radius / 2) + 25}
+              fill="#ffbf00"
+              fillOpacity={1}
+              transform="rotate()"
+              rx={100}
+              ry={100}
+            />
+            <rect
+              width={radius / 18}
+              height={radius - 50}
+              x={-(radius / 36)}
+              y={-(radius / 2) + 25}
+              fill="#ffbf00"
+              fillOpacity={1}
+              transform="rotate(90)"
+              rx={100}
+              ry={100}
+            />
+            <motion.circle
+              cx={50}
+              cy={0}
+              r={radius / 32}
+              fill="#ffbf00"
+              fillOpacity={1}
 
+            />
+            <motion.circle
+              cx={0}
+              cy={-50}
+              r={radius / 32}
+              fill="#ffbf00"
+              fillOpacity={1}
+
+            />
+            <motion.circle
+              cx={0}
+              cy={50}
+              r={radius / 30}
+              fill="#ffbf00"
+              fillOpacity={1}
+
+            />
+            <motion.circle
+              cx={-50}
+              cy={0}
+              r={radius / 30}
+              fill="#ffbf00"
+              fillOpacity={1}
+
+            />
+            <circle r={radius / 10} fill="#ffbf00" fillOpacity={1} />
+            <circle r={radius / 20} fill="#0C0A08" fillOpacity={1} />
             {/* center */}
           </g>
         </svg>

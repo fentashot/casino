@@ -23,6 +23,9 @@ export default function LoginForm() {
 
     const { refreshSession } = useAuth();
 
+    //auth callback URL
+    const cbURL = "/apps"
+
     return (
         <Card className="z-50 rounded-md rounded-t-none min-w-md">
             <CardHeader>
@@ -117,7 +120,7 @@ export default function LoginForm() {
                                 await signIn.social(
                                     {
                                         provider: "github",
-                                        callbackURL: "/expenses/total",
+                                        callbackURL: cbURL,
                                     },
                                     {
                                         onRequest: () => {

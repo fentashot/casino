@@ -19,13 +19,12 @@ interface RouterContext {
 }
 
 export const Route = createRootRouteWithContext<RouterContext>()({
+
     component: Root,
 });
 
 function Root() {
-    const {
-        auth: { isAuthenticated },
-    } = Route.useRouteContext();
+    const { auth: { isAuthenticated } } = Route.useRouteContext();
 
     return (
         <>
@@ -41,7 +40,7 @@ function Root() {
                     <>
                         <div>
                             <Link
-                                to="/expenses/total"
+                                to="/apps"
                                 className="[&.active]:font-bold"
                             >
                                 Dashboard

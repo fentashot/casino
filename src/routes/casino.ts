@@ -20,7 +20,7 @@ export interface Vars {
 
 
 
-interface SpinResponse {
+export interface SpinResponse {
   result: { number: number; color: 'red' | 'black' | 'green' };
   totalWin: number;
   provablyFair: {
