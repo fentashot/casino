@@ -1,13 +1,10 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-
 import { db } from "../db/turso";
 import { expenseTable } from "../db/schema";
 import { eq, sql } from "drizzle-orm";
 import { createExpenseSchema } from "../zodTypes";
-import { createMiddleware } from "hono/factory";
 import { auth } from "../auth";
-import { Context } from "hono";
 
 type User = typeof auth.$Infer.Session.user;
 type Session = typeof auth.$Infer.Session;

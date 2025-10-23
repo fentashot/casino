@@ -36,7 +36,6 @@ function FieldInfo<TName extends keyof FormValues>({ field }: CustomFieldInfoPro
 }
 function CreateExpense() {
   const navigate = useNavigate()
-
   const queryClient = useQueryClient()
 
   const form = useForm({

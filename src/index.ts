@@ -4,6 +4,7 @@ import { expensesRoutes } from "./routes/expenses";
 import { serveStatic } from "hono/bun";
 import { auth, useAuthMiddleware } from "./auth";
 import { cors } from "hono/cors";
+import { casinoRoutes } from "./routes/casino";
 
 interface Vars {
     Variables: {
@@ -29,18 +30,25 @@ app.use(
 );
 
 app.use("/api/expenses/*", useAuthMiddleware);
+app.use("/api/casino/*", useAuthMiddleware);
 
-const apiRoutes = app.basePath("/api").route("/expenses", expensesRoutes);
+
+const apiRoutes = app.basePath("/api").route("/expenses", expensesRoutes).route("/casino", casinoRoutes);
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => {
     return auth.handler(c.req.raw);
 });
 
-app.get("*", serveStatic({ root: "./client/dist" }));
-app.get("*", serveStatic({ path: "./client/dist/index.html" }));
+// app.get("*", serveStatic({ root: "./client/dist", onNotFound(path, c) {
+//     c.text("Not Found", 404);
+// }, }));
+// // app.get("*", serveStatic({ path: "./client/dist/index.html" }));
+
+
+const port = Number(process.env.PORT) || 2137;
 
 export default {
-    port: 2137,
+    port,
     fetch: app.fetch,
 };
 export type ApiRoutes = typeof apiRoutes;

@@ -88,3 +88,52 @@ export const verification = sqliteTable("verification", {
         .$onUpdate(() => "CURRENT_TIMESTAMP")
         .notNull(),
 });
+
+export const casinoServerSeed = sqliteTable("casino_server_seed", {
+    id: text("id").primaryKey(),
+    seed: text("seed").notNull(),
+    hash: text("hash").notNull(),
+    active: integer("active", { mode: "boolean" }).default(true).notNull(),
+    createdAt: text("created_at").default("CURRENT_TIMESTAMP").notNull(),
+    revealedAt: text("revealed_at"),
+});
+
+export const casinoSpin = sqliteTable("casino_spin", {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    clientSeed: text("client_seed").notNull(),
+    nonce: integer("nonce").notNull(),
+    hmac: text("hmac").notNull(),
+    serverSeedId: text("server_seed_id").notNull().references(() => casinoServerSeed.id),
+    number: integer("number").notNull(),
+    color: text("color").notNull(),
+    totalBet: numeric("total_bet").notNull(),
+    totalWin: numeric("total_win").notNull(),
+    createdAt: text("created_at").default("CURRENT_TIMESTAMP").notNull(),
+}, (table) => {
+    return [index("userIdSpinIndex").on(table.userId)];
+});
+
+export const casinoBet = sqliteTable("casino_bet", {
+    id: text("id").primaryKey(),
+    spinId: text("spin_id").notNull().references(() => casinoSpin.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    numbers: text("numbers").notNull(), // JSON array
+    amount: numeric("amount").notNull(),
+    color: text("color"),
+    choice: text("choice"),
+    win: numeric("win").notNull(),
+    createdAt: text("created_at").default("CURRENT_TIMESTAMP").notNull(),
+}, (table) => {
+    return [index("spinIdIndex").on(table.spinId)];
+});
+
+export const userBalance = sqliteTable("user_balance", {
+    userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+    lastNonce: integer('last_nonce').notNull().default(0), // dodaj tę linię
+    balance: numeric("balance").notNull().default("0"),
+    updatedAt: text("updated_at")
+        .default("CURRENT_TIMESTAMP")
+        .$onUpdate(() => "CURRENT_TIMESTAMP")
+        .notNull(),
+});

@@ -7,9 +7,15 @@ import {
 } from "react";
 import { getSession, signOut } from "./lib/auth-client";
 
+type User = {
+    id: string;
+    name: string;
+    email: string;
+}
+
 interface AuthContextType {
     isAuthenticated: boolean;
-    user: { id: string; name: string; email: string } | null;
+    user: User | null;
     refreshSession: () => Promise<void>;
     logout: () => Promise<void>;
 }
@@ -19,12 +25,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [user, setUser] = useState<any | null>(null);
+    const [user, setUser] = useState<User | null>(null);
 
     const refreshSession = async () => {
         const session = await getSession();
-
-        console.log("Session data:", session);
 
         if (session?.data) {
             setIsAuthenticated(true);

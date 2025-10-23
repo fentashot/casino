@@ -44,6 +44,8 @@ export const useAuthMiddleware = createMiddleware(async (c, next) => {
 
         c.set("user", session.user);
         c.set("session", session);
+
+        console.log("Authenticated user:", session.user.id);
         return next();
     } catch (error) {
         return c.json({ message: "Authentication error: " + error }, 500);

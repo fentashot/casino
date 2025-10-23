@@ -33,6 +33,7 @@ createRoot(document.getElementById("root")!).render(
                 <InnerApp />
             </AuthProvider>
             <ReactQueryDevtools initialIsOpen={false} />
+
         </QueryClientProvider>
     </StrictMode>
 );
