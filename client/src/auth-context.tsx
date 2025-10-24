@@ -6,11 +6,13 @@ import {
     type ReactNode,
 } from "react";
 import { getSession, signOut } from "./lib/auth-client";
+import { api } from "@/lib/api";
 
 type User = {
     id: string;
     name: string;
     email: string;
+    balance: number;
 }
 
 interface AuthContextType {
@@ -30,9 +32,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const refreshSession = async () => {
         const session = await getSession();
 
+        const res = await api.casino.balance.$get();
+        const balanceData = await res.json();
+
         if (session?.data) {
             setIsAuthenticated(true);
-            setUser(session.data.user);
+            setUser({ ...session.data.user, balance: balanceData.balance });
             setIsLoading(false);
         } else {
             console.log("Setting authenticated to FALSE - no session data");
@@ -51,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         refreshSession();
-    }, []);
+    }, [isLoading]);
 
     if (isLoading) {
         return <div>Loading...</div>;

@@ -7,7 +7,7 @@ import { SpinResponse } from '@server/types'
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 
-export const Route = createFileRoute('/_authenticated/casino/roulette')({
+export const Route = createFileRoute('/_authenticated/casino/r')({
   component: Roulette,
 })
 
@@ -73,31 +73,44 @@ function Roulette() {
   }
 
   return (
-    <div className='mx-auto  max-w-[700px] p-2.5 space-y-10 mt-10'>
-      <div className='flex items-center justify-center gap-10'>
-        <div className='w-12 h-12 bg-zinc-700 rounded text-center flex items-center justify-center text-white font-bold'>
-          {handleResultNumber()}
+    <>
+      <section>
+        {/* <div className="grid grid-cols-3 gap-4">
+          <div className="bg-blue-500 ">01</div>
+          <div className="bg-blue-500">02</div>
+          <div className="bg-blue-500">03</div>
+          <div className="col-span-2 bg-blue-500">04</div>
+          <div className="bg-blue-500">05</div>
+          <div className="bg-blue-500">06</div>
+          <div className="col-span-2 ...">07</div>
+        </div> */}
+      </section>
+      <div className='mx-auto max-w-[700px] p-2.5 space-y-10 mt-10'>
+        <div className='flex items-center justify-center gap-10'>
+          <div className='w-12 h-12 bg-zinc-700 rounded text-center flex items-center justify-center text-white font-bold'>
+            {handleResultNumber()}
+          </div>
+          <AnimatedWheel fontSizeProp={11} size={280} targetNumber={result?.number} onSpinEnd={() => {
+            clearSelection();
+          }} />
         </div>
-        <AnimatedWheel fontSizeProp={11} size={280} targetNumber={result?.number} onSpinEnd={() => {
-          clearSelection();
-        }} />
+        <div>
+          <RouletteControls handleBet={handleBet} value={selection} onChange={setSelection} newBalance={data?.newBalance || user?.balance} />
+        </div>
+        <div className='flex space-x-2 justify-center'>
+        </div>
+        <h1 className='text-xl'>Balance: {data?.newBalance || user?.balance}</h1>
+        <p>{JSON.stringify(selection)}</p>
+        <div>
+          <p>{`Number: ${data?.result.number} `}</p>
+          <p>{`Win: ${data?.totalWin}`}</p>
+          <p>{`Client Seed: ${data?.provablyFair.clientSeed}`}</p>
+          <p>{`Server Seed Hash: ${data?.provablyFair.serverSeedHash}`}</p>
+          <p>{`Nonce: ${data?.provablyFair.nonce}`}</p>
+        </div>
       </div>
-      <div>
-        <RouletteControls handleBet={handleBet} value={selection} onChange={setSelection} newBalance={data?.newBalance || user?.balance} />
-      </div>
-      <div className='flex space-x-2 justify-center'>
-        {/* <Button className="bg-[#FF013C] text-white" onClick={handleBet} disabled={disabled}>{'Bet Red'}</Button>
-        <Button className="bg-[#293136] text-white" onClick={handleBet} disabled={disabled}>{'Bet Black'}</Button> */}
-      </div>
-      <h1 className='text-xl'>Balance: {data?.newBalance || user?.balance}</h1>
-      <p>{JSON.stringify(selection)}</p>
-      <div>
-        <p>{`Number: ${data?.result.number} `}</p>
-        <p>{`Win: ${data?.totalWin}`}</p>
-        <p>{`Client Seed: ${data?.provablyFair.clientSeed}`}</p>
-        <p>{`Server Seed Hash: ${data?.provablyFair.serverSeedHash}`}</p>
-        <p>{`Nonce: ${data?.provablyFair.nonce}`}</p>
-      </div>
-    </div>
+    </>
   )
 }
+
+

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useAnimation } from 'framer-motion';
+import { rBlack, rGreen, rRed } from '@/lib/utils';
 
 type Props = {
   pockets?: number; // default: 37
@@ -7,12 +8,8 @@ type Props = {
   targetNumber?: number | null;
   onSpinEnd?: (n: number) => void;
   spinning?: boolean;
+  fontSizeProp?: number;
 };
-
-//Roulette colors
-const rRed = '#FF013C'
-const rBlack = '#293136'
-const rGreen = '#16a34a'
 
 const defaultColors = (i: number) => {
   if (i === 0) return rGreen;
@@ -20,7 +17,7 @@ const defaultColors = (i: number) => {
   return redSet.has(i) ? rRed : rBlack;
 };
 
-export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 300, targetNumber = null, onSpinEnd }) => {
+export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 300, targetNumber = null, onSpinEnd, fontSizeProp = 12 }) => {
   const anglePerPocket = 360 / pockets;
   const controls = useAnimation();
   const [isSpinning, setIsSpinning] = useState(false);
@@ -123,18 +120,18 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 300, targe
   const pocketsArr = Array.from({ length: pockets }, (_, i) => rouletteSequence[i]);
 
   return (
-    <div style={{ width: size * 1.2, margin: '0 auto', position: 'relative' }}>
+    <div style={{ width: size * 1.2, position: 'relative' }}>
       {/* Backdrop */}
       <div style={{
         position: 'absolute',
         top: '50%',
         left: '50%',
-        width: size * 1.1,
-        height: size * 1.1,
+        width: size * 1.125,
+        height: size * 1.125,
         transform: 'translate(-50%, -50%)',
         borderRadius: '50%',
         background: '#1a1a1a',
-        boxShadow: '0 0 40px rgba(0,0,0,0.5), inset 0 0 40px rgba(0,0,0,0.8)',
+        boxShadow: '0 0 40px rgba(0,0,0,0.1), inset 0 0 40px rgba(0,0,0,0.5)',
         zIndex: 0
       }} />
 
@@ -204,7 +201,7 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 300, targe
                     x={lx}
                     y={ly}
                     fill="#fff"
-                    fontSize={12}
+                    fontSize={fontSizeProp}
                     fontWeight={700}
                     textAnchor="middle"
                     dominantBaseline="middle"

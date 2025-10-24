@@ -25,15 +25,21 @@ export const betTypeSchema = z.enum([
   'high_low'
 ]);
 
+export const choiceSchema = z.union([
+  z.enum(['even', 'odd']),
+  z.enum(['red', 'black']),
+  z.enum(['low', 'high']),
+  z.enum(['col1', 'col2', 'col3']),
+  z.enum(['1st12', '2nd12', '3rd12']),
+]).optional();
+
 export const betSchema = z.object({
   type: betTypeSchema,
   numbers: z.array(z.number().int().min(0).max(36)),
   amount: z.number().int().positive(),
   color: z.enum(['red', 'black']).optional(),
-  choice: z.string().optional(),
+  choice: choiceSchema,
 });
-
-
 
 export const spinRequestSchema = z.object({
   bets: z.array(betSchema),

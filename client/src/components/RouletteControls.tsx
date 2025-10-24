@@ -1,27 +1,34 @@
-import { useMemo, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { rBlack, rGreen, rRed } from '@/lib/utils'
+import { betSchema } from '@server/zodTypes'
+import { Loader, RefreshCcw } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import z from 'zod'
 
 type EvenOdd = 'even' | 'odd'
 type Color = 'red' | 'black'
-type LowHigh = 'low' | 'high'
-type Dozen = 1 | 2 | 3
-type Column = 1 | 2 | 3
+type LowHigh = 'high' | 'low'
+type Dozen = "1st12" | "2nd12" | "3rd12"
+type Column = "col1" | "col2" | "col3"
 
-export type RouletteSelection = {
-  numbers: number[] // will contain at most one number in single-bet mode
-  dozen: Dozen | null
-  column: Column | null
-  evenOdd: EvenOdd | null
-  color: Color | undefined
-  lowHigh: LowHigh | null
+const baseSelection: RouletteSelection = {
+  type: "straight",
+  numbers: [],
+  amount: 10,
+  color: undefined,
+  choice: undefined,
 }
 
+export type RouletteSelection = z.infer<typeof betSchema>
+
 type Props = {
-  handleBet: (amount: number) => Promise<void>
+  handleBet: () => Promise<{ success: boolean; error: unknown }>
   value?: RouletteSelection
   onChange?: (v: RouletteSelection) => void
   onUndo?: () => void
   onClear?: () => void
   onPlaceBet?: (selection: RouletteSelection, amount: number) => void
+  newBalance?: number
   defaultAmount?: number
 }
 
@@ -33,30 +40,27 @@ const TOP_ROW = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36]
 const MIDDLE_ROW = [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35]
 const BOTTOM_ROW = [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34]
 
-const baseSelection: RouletteSelection = {
-  numbers: [],
-  dozen: null,
-  column: null,
-  evenOdd: null,
-  color: undefined,
-  lowHigh: null,
-}
-
 // Component
 export default function RouletteControls({
   handleBet,
   value,
   onChange,
-  onUndo,
-  onClear,
-  onPlaceBet,
-  defaultAmount = 10,
+  defaultAmount = 0,
+  newBalance,
 }: Props) {
   const [internal, setInternal] = useState<RouletteSelection>(baseSelection)
+  const [loading, setLoading] = useState<boolean>(false)
   const selection = value ?? internal
 
-  const [amount, setAmount] = useState<number>(defaultAmount)
-  const chips = [1, 5, 10, 25, 100]
+  const [betAmount, setBetAmount] = useState<number>(defaultAmount)
+  const chips = [10, 20, 50, 100, 500, 1000]
+
+  useEffect(() => {
+    setSelection({
+      ...selection,
+      amount: betAmount,
+    })
+  }, [betAmount])
 
   // single-bet mode helpers: setting any bet clears others
   const setSelection = (next: RouletteSelection) => {
@@ -64,10 +68,6 @@ export default function RouletteControls({
     onChange?.(next)
   }
 
-  const clearSelection = () => {
-    setSelection(baseSelection)
-    onClear?.()
-  }
 
   const isSelectedNumber = (n: number) => selection.numbers.includes(n)
 
@@ -77,90 +77,63 @@ export default function RouletteControls({
       setSelection(baseSelection)
     } else {
       setSelection({
+        type: "straight",
         numbers: [n],
-        dozen: null,
-        column: null,
-        evenOdd: null,
+        amount: betAmount,
         color: undefined,
-        lowHigh: null,
+        choice: undefined,
       })
     }
   }
 
   // Selecting other bet types clears number and other groups (single bet)
-  const selectDozen = (d: Dozen | null) =>
+  const selectDozen = (d: Dozen | undefined) =>
     setSelection({
+      type: "dozen",
       numbers: [],
-      dozen: d,
-      column: null,
-      evenOdd: null,
+      amount: betAmount,
       color: undefined,
-      lowHigh: null,
+      choice: d,
     })
 
-  const selectColumn = (c: Column | null) =>
+  const selectColumn = (c: Column | undefined) =>
     setSelection({
+      type: "column",
       numbers: [],
-      dozen: null,
-      column: c,
-      evenOdd: null,
+      amount: betAmount,
       color: undefined,
-      lowHigh: null,
+      choice: c,
     })
 
-  const selectEvenOdd = (eo: EvenOdd | null) =>
+  const selectEvenOdd = (eo: EvenOdd | undefined) =>
     setSelection({
+      type: "even_odd",
       numbers: [],
-      dozen: null,
-      column: null,
-      evenOdd: eo,
+      amount: betAmount,
       color: undefined,
-      lowHigh: null,
+      choice: eo,
     })
 
   const selectColor = (c: Color | undefined) =>
     setSelection({
+      type: "red_black",
       numbers: [],
-      dozen: null,
-      column: null,
-      evenOdd: null,
+      amount: betAmount,
       color: c,
-      lowHigh: null,
+      choice: undefined,
     })
 
-  const selectLowHigh = (lh: LowHigh | null) =>
+  const selectLowHigh = (lh: LowHigh | undefined) =>
     setSelection({
+      type: "high_low",
       numbers: [],
-      dozen: null,
-      column: null,
-      evenOdd: null,
+      amount: betAmount,
       color: undefined,
-      lowHigh: lh,
+      choice: lh,
     })
-
-  const placeBet = () => {
-    // require a selection and positive amount
-    const hasSelection =
-      selection.numbers.length > 0 ||
-      selection.dozen != null ||
-      selection.column != null ||
-      selection.evenOdd != null ||
-      selection.color != null ||
-      selection.lowHigh != null
-
-    if (!hasSelection || amount <= 0) return
-
-    onPlaceBet?.(selection, amount)
-    handleBet(amount)
-    // clear after placing single bet
-    clearSelection()
-    setAmount(defaultAmount)
-  }
 
   // Roulette colors
-  const rRed = '#FF013C'
-  const rBlack = '#293136'
-  const rGreen = '#16a34a'
+
 
   // Helpers for styling
   const numberBg = (n: number) => {
@@ -169,14 +142,14 @@ export default function RouletteControls({
   }
 
   const cellBase =
-    'select-none cursor-pointer rounded-md px-3 py-2 text-sm font-medium text-white text-center transition-colors'
+    'select-none cursor-pointer rounded-md text-sm font-medium text-white text-center transition-colors'
 
   const numberCell = (n: number) => (
     <button
       key={n}
       onClick={() => toggleNumber(n)}
       className={[
-        cellBase,
+        cellBase, "w-10 h-10",
         numberBg(n),
         isSelectedNumber(n) ? 'ring-2 ring-yellow-400' : 'ring-0',
       ].join(' ')}
@@ -186,18 +159,18 @@ export default function RouletteControls({
   )
 
   const GridRow = ({ nums }: { nums: number[] }) => (
-    <div className="grid grid-cols-12 gap-2">{nums.map(numberCell)}</div>
+    <div className="grid grid-cols-12 gap-1">{nums.map(numberCell)}</div>
   )
 
   // Right-side 2:1 columns
   const columnButton = (idx: Column) => {
-    const active = selection.column === idx
+    const active = selection.type === 'column' && selection.choice === idx
     return (
       <button
         key={idx}
-        onClick={() => selectColumn(active ? null : idx)}
+        onClick={() => selectColumn(active ? undefined : idx)}
         className={[
-          cellBase,
+          cellBase, "w-16 h-10",
           'bg-zinc-700',
           active ? 'ring-2 ring-yellow-400' : '',
         ].join(' ')}
@@ -211,139 +184,155 @@ export default function RouletteControls({
   const bottomBtn = (label: string, active: boolean, onClick: () => void, extraClasses = '') => (
     <button
       onClick={onClick}
-      className={[cellBase, 'bg-zinc-700', active ? 'ring-2 ring-yellow-400' : '', extraClasses].join(' ')}
+      className={[cellBase, 'bg-zinc-700 h-10 w-full', active ? 'ring-2 ring-yellow-400' : '', extraClasses].join(' ')}
     >
       {label}
     </button>
   )
 
-  const redActive = selection.color === 'red'
-  const blackActive = selection.color === 'black'
-  const evenActive = selection.evenOdd === 'even'
-  const oddActive = selection.evenOdd === 'odd'
-  const lowActive = selection.lowHigh === 'low'
-  const highActive = selection.lowHigh === 'high'
+  // Bottom controls
+  const bottomBtnRB = (label: string, active: boolean, onClick: () => void, extraClasses = '') => (
+    <button
+      onClick={onClick}
+      className={[cellBase, 'h-10 w-full', active ? 'ring-2 ring-yellow-400' : '', extraClasses].join(' ')}
+    >
+      {label}
+    </button>
+  )
+
+
+  const redActive = selection.type === 'red_black' && selection.color === 'red'
+  const blackActive = selection.type === 'red_black' && selection.color === 'black'
+  const evenActive = selection.type === 'even_odd' && selection.choice === 'even'
+  const oddActive = selection.type === 'even_odd' && selection.choice === 'odd'
+  const lowActive = selection.type === 'high_low' && selection.choice === 'low'
+  const highActive = selection.type === 'high_low' && selection.choice === 'high'
 
   const dozenActive = useMemo(
     () => ({
-      d1: selection.dozen === 1,
-      d2: selection.dozen === 2,
-      d3: selection.dozen === 3,
+      d1: selection.type === 'dozen' && selection.choice === '1st12',
+      d2: selection.type === 'dozen' && selection.choice === '2nd12',
+      d3: selection.type === 'dozen' && selection.choice === '3rd12',
     }),
-    [selection.dozen]
+    [selection.type, selection.choice]
   )
 
   const hasSelection =
-    selection.numbers.length > 0 ||
-    selection.dozen != null ||
-    selection.column != null ||
-    selection.evenOdd != null ||
-    selection.color != null ||
-    selection.lowHigh != null
+    selection.numbers.length > 0 || selection.type !== 'straight'
 
   return (
-    <div className="w-full rounded-xl bg-[#111212] p-3 text-white">
-      <div className="flex gap-2">
-        <div className="flex flex-col gap-2">
-          <button
-            onClick={() => toggleNumber(0)}
-            className={[
-              cellBase,
-              'bg-green-600 h-full min-h-[96px] w-12 justify-center',
-              isSelectedNumber(0) ? 'ring-2 ring-yellow-400' : '',
-            ].join(' ')}
-          >
-            0
-          </button>
-        </div>
-
-        {/* Main 3-row grid */}
-        <div className="flex-1 space-y-2">
-          <GridRow nums={TOP_ROW} />
-          <GridRow nums={MIDDLE_ROW} />
-          <GridRow nums={BOTTOM_ROW} />
-        </div>
-
-        {/* 2:1 column buttons */}
-        <div className="grid grid-rows-3 gap-2 w-16">
-          {([1, 2, 3] as Column[]).map(columnButton)}
-        </div>
-      </div>
-
-      {/* Dozens */}
-      <div className="grid grid-cols-3 gap-2 mt-3">
-        {bottomBtn('1 to 12', dozenActive.d1, () => selectDozen(dozenActive.d1 ? null : 1))}
-        {bottomBtn('13 to 24', dozenActive.d2, () => selectDozen(dozenActive.d2 ? null : 2))}
-        {bottomBtn('25 to 36', dozenActive.d3, () => selectDozen(dozenActive.d3 ? null : 3))}
-      </div>
-
-      {/* Low/High + Even/Odd + Red/Black */}
-      <div className="grid grid-cols-6 gap-2 mt-2">
-        {bottomBtn('1 to 18', lowActive, () => selectLowHigh(lowActive ? null : 'low'))}
-        {bottomBtn('Even', evenActive, () => selectEvenOdd(evenActive ? null : 'even'))}
-        {bottomBtn('Red', redActive, () => selectColor(redActive ? undefined : 'red'), 'bg-red-600')}
-        {bottomBtn('Black', blackActive, () => selectColor(blackActive ? undefined : 'black'), 'bg-zinc-900')}
-        {bottomBtn('Odd', oddActive, () => selectEvenOdd(oddActive ? null : 'odd'))}
-        {bottomBtn('19 to 36', highActive, () => selectLowHigh(highActive ? null : 'high'))}
-      </div>
-
-      {/* Bet amount + chips */}
-      <div className="mt-3 flex items-center gap-3">
-        <div className="flex gap-2">
-          {chips.map(c => (
+    <>
+      <div className="max-w-fit mx-auto rounded-xl bg-[#111212] p-4 text-white">
+        <div className="flex gap-1 mx-auto">
+          <div className="gap-1">
             <button
-              key={c}
-              onClick={() => setAmount(c)}
+              onClick={() => toggleNumber(0)}
               className={[
-                'px-3 py-1 rounded-md bg-zinc-700 text-white',
-                amount === c ? 'ring-2 ring-yellow-400' : '',
+                cellBase,
+                'bg-green-600 h-full min-h-[96px] w-12 justify-center',
+                isSelectedNumber(0) ? 'ring-2 ring-yellow-400' : '',
               ].join(' ')}
             >
-              {c}
+              0
             </button>
-          ))}
+          </div>
+
+
+          {/* Main 3-row grid */}
+          <div className="flex-1 space-y-1">
+            <GridRow nums={TOP_ROW} />
+            <GridRow nums={MIDDLE_ROW} />
+            <GridRow nums={BOTTOM_ROW} />
+          </div>
+
+          {/* 2:1 column buttons */}
+          <div className="grid grid-rows-3 gap-1 ">
+            {(["col1", "col2", "col3"] as Column[]).map(columnButton)}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 ml-auto">
-          <input
-            type="number"
-            min={0}
-            value={amount}
-            onChange={(e) => setAmount(Number(e.target.value))}
-            className="w-24 px-2 py-1 rounded-md bg-zinc-900 text-white border border-zinc-700"
-          />
-          <button
-            onClick={placeBet}
-            disabled={!hasSelection || amount <= 0}
-            className={[
-              'px-4 py-2 rounded-md text-white',
-              !hasSelection || amount <= 0 ? 'bg-zinc-600' : 'bg-[#FF013C]',
-            ].join(' ')}
+        {/* Dozens */}
+        <div className="grid grid-cols-3 gap-1 mt-1 h-10 mr-[68px] ml-[52px]">
+          {bottomBtn('1 to 12', dozenActive.d1, () => selectDozen(dozenActive.d1 ? undefined : '1st12'))}
+          {bottomBtn('13 to 24', dozenActive.d2, () => selectDozen(dozenActive.d2 ? undefined : '2nd12'))}
+          {bottomBtn('25 to 36', dozenActive.d3, () => selectDozen(dozenActive.d3 ? undefined : '3rd12'))}
+        </div>
+
+        {/* Low/High + Even/Odd + Red/Black */}
+        <div className="grid grid-cols-6 gap-1 mt-1 mr-[68px] ml-[52px]">
+          <div className="">{bottomBtn('1 to 18', lowActive, () => selectLowHigh(lowActive ? undefined : 'low'),)}</div>
+          <div className="">{bottomBtn('Even', evenActive, () => selectEvenOdd(evenActive ? undefined : 'even'))}</div>
+          <div className="">{bottomBtnRB('', redActive, () => selectColor(redActive ? undefined : 'red'), `bg-[${rRed}]`)}</div>
+          <div className="">{bottomBtnRB('', blackActive, () => selectColor(blackActive ? undefined : 'black'), `bg-[${rBlack}]`)}</div>
+          <div className="">{bottomBtn('Odd', oddActive, () => selectEvenOdd(oddActive ? undefined : 'odd'))}</div>
+          <div className="">{bottomBtn('19 to 36', highActive, () => selectLowHigh(highActive ? undefined : 'high'))}</div>
+        </div>
+
+      </div>
+      {/* Bet amount + chips */}
+      <div className="mt-3 flex gap-3 bg-[#111212] p-5 rounded-xl flex-col">
+        <div className='flex text-xl gap-2 items-center'>
+          <h1 className='font-medium'>Balance:</h1>
+          <div className='border rounded-lg py-0.5 px-3 text-lg'>${newBalance || 0}</div>
+        </div>
+        <div className='flex flex-between w-full'>
+          <div className="flex gap-2">
+            {chips.map(c => (
+              <button
+                key={c}
+                onClick={() => setBetAmount(c)}
+                className={[
+                  'px-3 py-1 rounded-md bg-zinc-700 text-white',
+                  betAmount === c ? 'ring-2 ring-yellow-400' : '',
+                ].join(' ')}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 ml-auto">
+            <input
+              type="number"
+              min={0}
+              value={betAmount}
+              onChange={(e) => setBetAmount(Number(e.target.value))}
+              className="w-24 px-2 py-1 rounded-md bg-zinc-900 text-white border border-zinc-700"
+            />
+            <button
+              onClick={() => {
+                setLoading(true);
+                setSelection(baseSelection)
+                handleBet().
+                  finally(() => {
+                    setLoading(false)
+                  })
+              }}
+              disabled={!hasSelection || betAmount <= 0}
+              className={[
+                'px-4 py-2 rounded-md text-white min-w-28',
+                !hasSelection || betAmount <= 0 ? 'bg-zinc-600' : 'bg-[#FF013C]',
+              ].join(' ')}
+            >
+              {loading ? <Loader className='animate-spin mx-auto' /> : 'Place Bet'}
+            </button>
+          </div>
+        </div>
+        {/* Actions */}
+        <div className="flex items-center justify-between mt-3 text-sm w-full">
+          <Button
+            onClick={() => {
+              setSelection(baseSelection)
+            }}
+            variant={'outline'}
+            className="transition-colors flex items-center gap-2 font-medium "
+            title="Clear"
           >
-            Place Bet
-          </button>
+
+            <RefreshCcw size={20} />Refresh
+          </Button>
         </div>
       </div>
+    </>
 
-      {/* Actions */}
-      <div className="flex items-center justify-between mt-3 text-sm">
-        <button
-          onClick={onUndo}
-          className="text-zinc-300 hover:text-white transition-colors flex items-center gap-2"
-          title="Undo"
-        >
-          ↩ Undo
-        </button>
-        <button
-          onClick={() => {
-            clearSelection()
-          }}
-          className="text-zinc-300 hover:text-white transition-colors flex items-center gap-2"
-          title="Clear"
-        >
-          Clear ⟳
-        </button>
-      </div>
-    </div>
   )
 }

@@ -70,11 +70,16 @@ export const casinoRoutes = new Hono<Vars>()
       // Create initial balance if it doesn't exist
       await db.insert(userBalance).values({
         userId: id,
-        balance: '1000.00', // Initial balance of 1000
+        balance: '100000.00', // Initial balance of 1000
         lastNonce: 0,
       });
-      balance = { balance: '1000.00' };
+      balance = { balance: '100000.00' };
     }
+    // await db.update(userBalance).set({
+    //   userId: id,
+    //   balance: '100000.00', // Initial balance of 1000
+    //   lastNonce: 0,
+    // });
 
     return c.json({ balance: Number(balance.balance) });
   })
@@ -192,6 +197,7 @@ export const casinoRoutes = new Hono<Vars>()
     const res: SpinResponse = {
       result: { number, color },
       totalWin,
+      newBalance: newBalance,
       provablyFair: {
         clientSeed: body.clientSeed,
         serverSeedHash: serverSeedRecord.hash,
