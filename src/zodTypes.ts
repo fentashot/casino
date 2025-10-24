@@ -33,6 +33,8 @@ export const betSchema = z.object({
   choice: z.string().optional(),
 });
 
+
+
 export const spinRequestSchema = z.object({
   bets: z.array(betSchema),
   clientSeed: z.string().min(1),

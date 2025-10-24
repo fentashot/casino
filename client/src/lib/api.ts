@@ -1,6 +1,8 @@
 import { type ApiRoutes } from '@server/index'
+import { betTypeSchema } from '@server/zodTypes'
 import { queryOptions } from '@tanstack/react-query'
 import { hc } from 'hono/client'
+import z from 'zod'
 
 
 const client = hc<ApiRoutes>("/")
@@ -50,17 +52,17 @@ export const getTotalSpentQueryOptions = queryOptions({
 });
 
 
-export async function testPlaceBet(amount: number, choice: 'red' | 'black') {
+export async function placeBet(amount: number, color: 'red' | 'black' | undefined, numbers: number[] = [], type: z.infer<typeof betTypeSchema>) {
   const res = await api.casino.spin.$post({
     json: {
       clientSeed: 'client-seed-test',
       nonce: 1,
       bets: [
         {
-          type: 'straight',
+          type: type,
           amount: amount,
-          color: choice,
-          numbers: [],
+          color: color,
+          numbers: numbers,
         },
       ],
     },

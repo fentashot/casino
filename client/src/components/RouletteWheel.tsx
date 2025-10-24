@@ -1,33 +1,34 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 
 type Props = {
-  pockets?: number; // domyślnie 37
+  pockets?: number; // default: 37
   size?: number; // px
-  targetNumber?: number | null; // gdy podane — koło zakręci i zatrzyma się na tym numerze
+  targetNumber?: number | null;
   onSpinEnd?: (n: number) => void;
-  spinning?: boolean; // opcjonalnie wymusz spin
+  spinning?: boolean;
 };
+
+//Roulette colors
+const rRed = '#FF013C'
+const rBlack = '#293136'
+const rGreen = '#16a34a'
 
 const defaultColors = (i: number) => {
-  // standardowa sekwencja czerwone/czarne z 0 jako green
-  if (i === 0) return '#16a34a';
-  // prosty przydział kolorów: większość czerwone/czarne według klasycznych liczb
+  if (i === 0) return rGreen;
   const redSet = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
-  return redSet.has(i) ? '#FF013C' : '#293136';
+  return redSet.has(i) ? rRed : rBlack;
 };
 
-export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 420, targetNumber = null, onSpinEnd }) => {
+export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 300, targetNumber = null, onSpinEnd }) => {
   const anglePerPocket = 360 / pockets;
   const controls = useAnimation();
   const [isSpinning, setIsSpinning] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const tickIntervalRef = useRef<number | null>(null);
 
-  // NOWE: akumulowany absolutny kąt (zawsze rośnie — ten sam kierunek)
   const totalRotationRef = useRef(0)
 
-  // Sekwencja (EU) przeniesiona wyżej, by była dostępna w spinToPocket
   const rouletteSequence = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26]
 
   useEffect(() => {
@@ -66,23 +67,21 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 420, targe
 
     setIsSpinning(true)
 
-    // kąt środka docelowej kieszeni (0° na górze)
     const pocketCenter = targetIndex * anglePerPocket + anglePerPocket / 2
-    const desiredAngleAtTop = (360 - pocketCenter) % 360 // kąt, przy którym kieszeń jest pod wskaźnikiem
+    const desiredAngleAtTop = (360 - pocketCenter) % 360
 
-    // STAŁA liczba pełnych obrotów (np. 6)
+    //Fake rotations
     const fullRotations = 6
 
-    // różnica do docelowego kąta względem obecnej pozycji (mod 360), zawsze dodatnia (ten sam kierunek)
     const currentMod = ((totalRotationRef.current % 360) + 360) % 360
-    const deltaToDesired = ((desiredAngleAtTop - currentMod + 360) % 360)
+    const delta = ((desiredAngleAtTop - currentMod + 360) % 360)
 
-    // finalny absolutny kąt: obecny + pełne obroty + dodatnia delta
-    const finalRotation = totalRotationRef.current + fullRotations * 360 + deltaToDesired
+    //Final angle ( current + fake full rotations + delta to chosen pocket)
+    const finalRotation = totalRotationRef.current + fullRotations * 360 + delta
 
     const duration = 2.8 // default 4.8s
 
-    // ticki/prosty dźwięk
+    //Simple tick sound
     const spinDegrees = finalRotation - totalRotationRef.current
     const estimatedPasses = (spinDegrees / 360) * pockets
     const tickEveryMs = Math.max(30, (duration * 1000) / Math.max(estimatedPasses, 1))
@@ -93,10 +92,9 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 420, targe
       playTick(1000 + (tickCount % 3) * 120, 0.02)
     }, tickEveryMs)
 
-    // klucz: animujemy do WIĘKSZEGO absolutnego kąta (Framer nie wybierze krótszej ścieżki)
     await controls.start(
       { rotate: finalRotation },
-      { duration, ease: [0.22, 0.61, 0.36, 1] } 
+      { duration, ease: [0.22, 0.61, 0.36, 1] }
     )
 
     if (tickIntervalRef.current) {
@@ -104,7 +102,6 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 420, targe
       tickIntervalRef.current = null
     }
 
-    // BEZ cofki/bounce w przeciwną stronę (żeby kierunek był stały)
     totalRotationRef.current = finalRotation
 
     setIsSpinning(false)
@@ -119,7 +116,7 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 420, targe
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetNumber])
 
-  // Build SVG wheel: draw pockets and labels
+  //---SVG wheel---
   const radius = size / 2;
   const innerRadius = radius * 0.62;
 
@@ -230,7 +227,6 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 420, targe
               y={-(radius / 2) + 25}
               fill="#ffbf00"
               fillOpacity={1}
-              transform="rotate()"
               rx={100}
               ry={100}
             />

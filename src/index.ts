@@ -13,14 +13,14 @@ interface Vars {
     };
 }
 
-export const app = new Hono<Vars>();
+const app = new Hono<Vars>();
 
 app.use("*", logger());
 
 app.use(
-    "/api/auth/*", // or replace with "*" to enable cors for all routes
+    "/api/auth/*",
     cors({
-        origin: ["http://localhost:3000", "http://127.0.0.1:3000"], // allow both origins
+        origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
         allowHeaders: ["Content-Type", "Authorization"],
         allowMethods: ["POST", "GET", "OPTIONS"],
         exposeHeaders: ["Content-Length"],
@@ -39,9 +39,9 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => {
     return auth.handler(c.req.raw);
 });
 
-// app.get("*", serveStatic({ root: "./client/dist", onNotFound(path, c) {
-//     c.text("Not Found", 404);
-// }, }));
+app.get("*", serveStatic({ root: "./client/dist", onNotFound(path, c) {
+    c.text("Not Found", 404);
+}, }));
 // // app.get("*", serveStatic({ path: "./client/dist/index.html" }));
 
 

@@ -5,16 +5,7 @@ import { expenseTable } from "../db/schema";
 import { eq, sql } from "drizzle-orm";
 import { createExpenseSchema } from "../zodTypes";
 import { auth } from "../auth";
-
-type User = typeof auth.$Infer.Session.user;
-type Session = typeof auth.$Infer.Session;
-
-export interface Vars {
-    Variables: {
-        user: User | null;
-        session: Session | null;
-    };
-}
+import { User, Vars } from "../types";
 
 export const expensesRoutes = new Hono<Vars>()
     //GET /api/expenses for current logged in user
