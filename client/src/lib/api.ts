@@ -55,7 +55,7 @@ export const getTotalSpentQueryOptions = queryOptions({
 export async function placeBet(amount: number, color: 'red' | 'black' | undefined, numbers: number[] = [], type: z.infer<typeof betTypeSchema> , choice: z.infer<typeof choiceSchema>) {
   const res = await api.casino.spin.$post({
     json: {
-      clientSeed: 'client-seed-test',
+      clientSeed: '8293yr8wehdu2',
       nonce: 1,
       bets: [
         {

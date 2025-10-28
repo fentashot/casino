@@ -239,7 +239,8 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 300, targe
               ry={100}
             />
             <motion.circle
-              cx={50}
+
+              cx={radius/3}
               cy={0}
               r={radius / 32}
               fill="#ffbf00"
@@ -248,7 +249,7 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 300, targe
             />
             <motion.circle
               cx={0}
-              cy={-50}
+              cy={-radius/3}
               r={radius / 32}
               fill="#ffbf00"
               fillOpacity={1}
@@ -256,14 +257,14 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 300, targe
             />
             <motion.circle
               cx={0}
-              cy={50}
+              cy={radius/3}
               r={radius / 30}
               fill="#ffbf00"
               fillOpacity={1}
 
             />
             <motion.circle
-              cx={-50}
+              cx={-radius/3}
               cy={0}
               r={radius / 30}
               fill="#ffbf00"

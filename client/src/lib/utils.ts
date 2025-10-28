@@ -6,5 +6,5 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const rRed = '#FF013C'
-export const rBlack = '#293136'
-export const rGreen = '#16a34a'
+export const rBlack = '#1D2224'
+export const rGreen = '#16A34A'

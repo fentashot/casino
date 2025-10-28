@@ -30,6 +30,7 @@ type Props = {
   onPlaceBet?: (selection: RouletteSelection, amount: number) => void
   newBalance?: number
   defaultAmount?: number
+  disableBet?: boolean
 }
 
 const RED_NUMBERS = new Set([
@@ -47,6 +48,7 @@ export default function RouletteControls({
   onChange,
   defaultAmount = 0,
   newBalance,
+  disableBet = false,
 }: Props) {
   const [internal, setInternal] = useState<RouletteSelection>(baseSelection)
   const [loading, setLoading] = useState<boolean>(false)
@@ -138,7 +140,7 @@ export default function RouletteControls({
   // Helpers for styling
   const numberBg = (n: number) => {
     if (n === 0) return `bg-[${rGreen}]`
-    return RED_NUMBERS.has(n) ? `bg-[${rRed}]` : `bg-[${rBlack}]`
+    return RED_NUMBERS.has(n) ? `bg-[${rRed}]` : `bg-[#1D2224]`
   }
 
   const cellBase =
@@ -301,16 +303,15 @@ export default function RouletteControls({
             <button
               onClick={() => {
                 setLoading(true);
-                setSelection(baseSelection)
                 handleBet().
                   finally(() => {
                     setLoading(false)
                   })
               }}
-              disabled={!hasSelection || betAmount <= 0}
+              disabled={(!hasSelection || betAmount <= 0 || disableBet) && true}
               className={[
-                'px-4 py-2 rounded-md text-white min-w-28',
-                !hasSelection || betAmount <= 0 ? 'bg-zinc-600' : 'bg-[#FF013C]',
+                'px-4 py-2 rounded-md text-white min-w-28 duration-200',
+                !hasSelection || betAmount <= 0 || disableBet ? 'bg-zinc-600' : 'bg-[#FF013C]',
               ].join(' ')}
             >
               {loading ? <Loader className='animate-spin mx-auto' /> : 'Place Bet'}

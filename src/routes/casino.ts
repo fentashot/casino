@@ -197,6 +197,7 @@ export const casinoRoutes = new Hono<Vars>()
     const res: SpinResponse = {
       result: { number, color },
       totalWin,
+      totalBet,
       newBalance: newBalance,
       provablyFair: {
         clientSeed: body.clientSeed,

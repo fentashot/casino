@@ -14,6 +14,7 @@ export interface Vars {
 export interface SpinResponse {
   result: { number: number; color: 'red' | 'black' | 'green' };
   newBalance: number;
+  totalBet: number;
   totalWin: number;
   provablyFair: {
     clientSeed: string;
