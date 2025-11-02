@@ -70,7 +70,7 @@ function Roulette() {
 
   return (
     <>
-      <section className='mx-auto p-2.5 space-y-10 mt-10'>
+      <section className='p-2.5 space-y-10 mt-10'>
         <div className='flex items-center justify-center gap-10'>
           <div className="w-12 h-12 overflow-hidden bg-zinc-700 rounded-md">
             <div
@@ -82,7 +82,7 @@ function Roulette() {
               </div>
             </div>
           </div>
-          <AnimatedWheel fontSizeProp={11} size={280} targetNumber={result?.number} onSpinEnd={() => {
+          <AnimatedWheel fontSizeProp={11} size={290} targetNumber={result?.number} onSpinEnd={() => {
             setDisableBetting(false);
             setShowResult(true)
             setBalance(data?.newBalance || user?.balance || 0)
@@ -92,9 +92,8 @@ function Roulette() {
         <div>
           <RouletteControls onPlaceBets={handlePlaceBets} balance={balance} disableBet={disableBetting} />
         </div>
-        <div className='flex space-x-2 justify-center'>
-        </div>
-        <div>
+
+        <div className='pt-10 pb-2'>
           <p>{`Number: ${data?.result.number} `}</p>
           <p>{`Total Bet: ${data?.totalBet}`}</p>
           <p>{`Win: ${data?.totalWin}`}</p>

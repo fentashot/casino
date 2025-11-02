@@ -4,6 +4,7 @@ import { betSchema } from '@server/zodTypes'
 import z from 'zod'
 import { rBlack, rGreen, rRed } from '@/lib/utils'
 import { motion } from 'framer-motion'
+import { Button } from '@/components/ui/button'
 
 export type RouletteSelection = z.infer<typeof betSchema>
 
@@ -126,10 +127,12 @@ export default function RouletteControls({ defaultAmount = 10, disableBet = fals
   }
 
   const formatValue = (value: number) => {
-    if (value >= 1000) {
-      return `${(value / 1000)}k`
-    }
+    if (value >= 1000) return `${(value / 1000).toFixed(1)}k`
     return value.toString()
+  }
+
+  const formatBalance = (value: number) => {
+    return value.toLocaleString().replace(/,/g, '.')
   }
 
   const getKeyFromSelection = (selection: RouletteSelection): string => {
@@ -211,7 +214,7 @@ export default function RouletteControls({ defaultAmount = 10, disableBet = fals
   )
 
   return (
-    <div className='max-w-fit mx-auto space-y-4'>
+    <div className='max-w-fit mx-auto space-y-3'>
       <div className="max-w-fit mx-auto rounded-xl bg-[#111212] p-5 text-white">
         <div className="grid grid-cols-3 grid-rows-2 grid-cols-[auto,1fr,auto] grid-rows-[auto,1fr]">
           <div className='relative'>
@@ -247,6 +250,24 @@ export default function RouletteControls({ defaultAmount = 10, disableBet = fals
               <div className="relative"><button onMouseDown={(e) => handleClick('high_low:high', e)} onContextMenu={(e) => e.preventDefault()} className="rounded w-full h-10 bg-zinc-700">19 to 36</button>{pendingStacks['high_low:high'] ? <div className="badge">{formatValue(pendingStacks['high_low:high'].total)}</div> : null}</div>
             </div>
 
+            <div className="flex justify-center gap-1 pt-3 pb-1">
+              <Button
+                onClick={resetAllBets}
+                variant='outline'
+                disabled={basket.length === 0 && Object.keys(pendingStacks).length === 0}
+                className={["px-4 py-2 rounded text-white w-full", (basket.length === 0 && Object.keys(pendingStacks).length === 0) ? 'bg-zinc-600' : 'bg-red-600 hover:bg-red-700'].join(' ')}
+              >
+                Reset All
+              </Button>
+              <Button
+                onClick={placeBasket}
+                disabled={!onPlaceBets || !basket.length}
+                className={["w-full px-4 py-2 rounded text-white", (!onPlaceBets || !basket.length) ? 'bg-zinc-600' : "bg-blue-500 hover:bg-blue-600"].join(' ')}
+              >
+                {loading ? <Loader className="animate-spin" /> : `Place Bets (${basket.length})`}
+              </Button>
+            </div>
+
           </div>
 
           <div className="grid grid-rows-3 gap-1 w-16">
@@ -259,7 +280,7 @@ export default function RouletteControls({ defaultAmount = 10, disableBet = fals
       </div>
 
       <div className="p-5 rounded-xl bg-[#111212]">
-        <div className="text-xl text-zinc-400 my-5 flex items-center gap-3">
+        <div className="text-xl text-zinc-400 flex items-center gap-3 mb-5">
           Balance:
           <motion.span
             key={balance}
@@ -270,12 +291,11 @@ export default function RouletteControls({ defaultAmount = 10, disableBet = fals
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="font-bold text-white"
           >
-            {balance !== undefined ? balance : 'N/A'}
+            {balance !== undefined ? formatBalance(balance) : 'N/A'}
           </motion.span>
         </div>
 
         <div className="flex items-center gap-3">
-
           <div className="text-sm text-zinc-400">Chip value</div>
           <div className="flex gap-2">
             {[10, 20, 50, 100, 500, 1000].map(d => (
@@ -294,32 +314,19 @@ export default function RouletteControls({ defaultAmount = 10, disableBet = fals
 
         </div>
 
-        <div className="">
 
-          <div className="text-sm text-zinc-400 mb-2">Basket</div>
+        <div className="text-sm text-zinc-400 mb-2">Basket</div>
 
-          <div className="flex gap-2 flex-wrap">
-            {basket.length === 0 ? <div className="text-sm text-zinc-500">empty</div> : basket.map((b, i) => (
-              <div key={i} className="px-2 py-1 rounded bg-zinc-800 text-sm flex items-center gap-1">
-                <div className="font-mono text-xs">{b.numbers?.length ? "n=" + b.numbers.join(',') : (b.choice !== undefined ? b.choice : b.color)}</div>
-                <div className="font-mono text-xs">${b.amount}</div>
-                <button onClick={() => removeFromBasket(i)} className="text-xs text-zinc-400">✕</button>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex justify-between mt-3">
-            <button
-              onClick={resetAllBets}
-              disabled={basket.length === 0 && Object.keys(pendingStacks).length === 0}
-              className={["px-4 py-2 rounded text-white", (basket.length === 0 && Object.keys(pendingStacks).length === 0) ? 'bg-zinc-600' : 'bg-red-600 hover:bg-red-700'].join(' ')}
-            >
-              Reset All
-            </button>
-            <button onClick={placeBasket} disabled={!onPlaceBets || !basket.length} className={["px-4 py-2 rounded text-white", (!onPlaceBets || !basket.length) ? 'bg-zinc-600' : 'bg-[#FF013C]'].join(' ')}>{loading ? <Loader className="animate-spin" /> : `Place Bets (${basket.length})`}</button>
-          </div>
-
+        <div className="flex max-w-[700px] flex-wrap  gap-2 ">
+          {basket.length === 0 ? <div className="text-sm text-zinc-500">empty</div> : basket.map((b, i) => (
+            <div key={i} className="px-2 py-1 rounded bg-zinc-800 text-sm flex items-center gap-1" >
+              <div className="font-mono text-xs">{b.numbers?.length ? "n=" + b.numbers.join(',') : (b.choice !== undefined ? b.choice : b.color)}</div>
+              <div className="font-mono text-xs">${b.amount}</div>
+              <button onClick={() => removeFromBasket(i)} className="text-xs text-zinc-400">✕</button>
+            </div>
+          ))}
         </div>
+
 
       </div>
     </div>
