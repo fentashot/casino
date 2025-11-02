@@ -1,7 +1,7 @@
 import { useAuth } from '@/auth-context'
 import RouletteControls, { RouletteSelection } from '@/components/RouletteControls'
 import AnimatedWheel from '@/components/RouletteWheel'
-import { placeBet } from '@/lib/api'
+import { api } from '@/lib/api'
 import { SpinResponse } from '@server/types'
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -17,40 +17,44 @@ type Result = {
 
 function Roulette() {
   const [result, setResult] = useState<Result | null>(null);
-  // const [disabled, setDisabled] = useState(false);
   const [data, setData] = useState<SpinResponse | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [disableBetting, setDisableBetting] = useState(false);
 
   const { user } = useAuth();
 
-  const [selection, setSelection] = useState<RouletteSelection>({
-    type: "straight",
-    numbers: [],
-    amount: 10,
-    color: undefined,
-    choice: undefined,
-  })
-
-  const handleBet = async () => {
+  // batched place bets handler
+  const handlePlaceBets = async (bets: RouletteSelection[]) => {
     setShowResult(false)
     try {
-      const res = await placeBet(
-        selection.amount,
-        selection.color,
-        selection.numbers,
-        selection.type,
-        selection.choice
-      )
       setDisableBetting(true);
+      const res = await api.casino.spin.$post({
+        json: {
+          clientSeed: '8293yr8wehdu2',
+          nonce: 1,
+          bets: bets.map((b) => ({
+            type: b.type,
+            amount: b.amount,
+            color: b.color || undefined,
+            choice: b.choice,
+            numbers: b.numbers || [],
+          })),
+        },
+      });
 
-      if (res) {
-        setResult(res.result);
+      const data = await res.json();
+      if (res.ok && data && typeof data === 'object' && 'result' in data) {
+        const spin = data as unknown as SpinResponse
+        setResult(spin.result)
+        setData(spin)
+      } else if (res.ok) {
+        setData(data as SpinResponse)
       }
-      setData(res);
-      return { success: true, error: null };
+
+      return { success: true, error: null }
     } catch (error) {
-      return { success: false, error: error };
+      setDisableBetting(false)
+      return { success: false, error }
     }
   }
 
@@ -84,12 +88,11 @@ function Roulette() {
           }} />
         </div>
         <div>
-          <RouletteControls handleBet={handleBet} value={selection} onChange={setSelection} newBalance={data?.newBalance || user?.balance} disableBet={disableBetting} />
+          <RouletteControls onPlaceBets={handlePlaceBets} newBalance={data?.newBalance || user?.balance} disableBet={disableBetting} />
         </div>
         <div className='flex space-x-2 justify-center'>
         </div>
         <div>
-          <p>{JSON.stringify(selection)}</p>
           <p>{`Number: ${data?.result.number} `}</p>
           <p>{`Total Bet: ${data?.totalBet}`}</p>
           <p>{`Win: ${data?.totalWin}`}</p>

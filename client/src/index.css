@@ -134,10 +134,16 @@ button:focus-visible {
   body {
     @apply bg-background text-foreground;
   }
-  
-  cellBase {
-    @apply select-none cursor-pointer rounded-md text-sm font-medium text-white text-center transition-colors
 
+  .cellBase {
+    @apply select-none cursor-pointer rounded-md text-sm font-medium text-white text-center transition-colors;
   }
 
+  .badge {
+    @apply absolute bottom-1 right-1 bg-yellow-300 text-black text-xs px-1 rounded-sm z-10; 
+  }
+
+  .badge-pocket {
+    @apply absolute bottom-1 left-1 bg-yellow-300 text-black text-xs px-1 rounded-sm z-10; 
+  }
 }

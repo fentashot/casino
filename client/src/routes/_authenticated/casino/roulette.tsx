@@ -1,7 +1,7 @@
 import { useAuth } from '@/auth-context'
 import RouletteControls, { RouletteSelection } from '@/components/RouletteControls'
 import AnimatedWheel from '@/components/RouletteWheel'
-import { placeBet } from '@/lib/api'
+import { api } from '@/lib/api'
 import { SpinResponse } from '@server/types'
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -32,25 +32,40 @@ function Roulette() {
     choice: undefined,
   })
 
-  const handleBet = async () => {
+
+
+  const handlePlaceBets = async (bets: RouletteSelection[]) => {
     setShowResult(false)
     try {
-      const res = await placeBet(
-        selection.amount,
-        selection.color,
-        selection.numbers,
-        selection.type,
-        selection.choice
-      )
       setDisableBetting(true);
 
-      if (res) {
-        setResult(res.result);
+      const res = await api.casino.spin.$post({
+        json: {
+          clientSeed: '8293yr8wehdu2',
+          nonce: 1,
+          bets: bets.map((b) => ({
+            type: b.type,
+            amount: b.amount,
+            color: b.color || undefined,
+            choice: b.choice,
+            numbers: b.numbers || [],
+          })),
+        },
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        const spin = data as SpinResponse;
+        if (spin.result) {
+          setResult(spin.result);
+        }
+        setData(spin);
       }
-      setData(res);
       return { success: true, error: null };
     } catch (error) {
-      return { success: false, error: error };
+      setDisableBetting(false);
+      return { success: false, error };
     }
   }
 
@@ -84,7 +99,7 @@ function Roulette() {
           }} />
         </div>
         <div>
-          <RouletteControls handleBet={handleBet} value={selection} onChange={setSelection} newBalance={data?.newBalance || user?.balance} disableBet={disableBetting} />
+          <RouletteControls onPlaceBets={handlePlaceBets} value={selection} onChange={setSelection} newBalance={data?.newBalance || user?.balance} disableBet={disableBetting} />
         </div>
         <div className='flex space-x-2 justify-center'>
         </div>
