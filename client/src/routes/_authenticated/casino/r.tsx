@@ -16,12 +16,13 @@ type Result = {
 }
 
 function Roulette() {
+  const { user } = useAuth();
+
   const [result, setResult] = useState<Result | null>(null);
   const [data, setData] = useState<SpinResponse | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [disableBetting, setDisableBetting] = useState(false);
-
-  const { user } = useAuth();
+  const [balance, setBalance] = useState(user?.balance || 0);
 
   // batched place bets handler
   const handlePlaceBets = async (bets: RouletteSelection[]) => {
@@ -46,9 +47,8 @@ function Roulette() {
       if (res.ok && data && typeof data === 'object' && 'result' in data) {
         const spin = data as unknown as SpinResponse
         setResult(spin.result)
-        setData(spin)
-      } else if (res.ok) {
-        setData(data as SpinResponse)
+        setBalance(balance - spin.totalBet)
+        setData(spin as SpinResponse)
       }
 
       return { success: true, error: null }
@@ -70,7 +70,7 @@ function Roulette() {
 
   return (
     <>
-      <section className='mx-auto max-w-[700px] p-2.5 space-y-10 mt-10'>
+      <section className='mx-auto p-2.5 space-y-10 mt-10'>
         <div className='flex items-center justify-center gap-10'>
           <div className="w-12 h-12 overflow-hidden bg-zinc-700 rounded-md">
             <div
@@ -85,10 +85,12 @@ function Roulette() {
           <AnimatedWheel fontSizeProp={11} size={280} targetNumber={result?.number} onSpinEnd={() => {
             setDisableBetting(false);
             setShowResult(true)
+            setBalance(data?.newBalance || user?.balance || 0)
+
           }} />
         </div>
         <div>
-          <RouletteControls onPlaceBets={handlePlaceBets} newBalance={data?.newBalance || user?.balance} disableBet={disableBetting} />
+          <RouletteControls onPlaceBets={handlePlaceBets} balance={balance} disableBet={disableBetting} />
         </div>
         <div className='flex space-x-2 justify-center'>
         </div>

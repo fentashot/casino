@@ -99,7 +99,7 @@ function Roulette() {
           }} />
         </div>
         <div>
-          <RouletteControls onPlaceBets={handlePlaceBets} value={selection} onChange={setSelection} newBalance={data?.newBalance || user?.balance} disableBet={disableBetting} />
+          <RouletteControls onPlaceBets={handlePlaceBets} value={selection} onChange={setSelection} balance={data?.newBalance || user?.balance} disableBet={disableBetting} />
         </div>
         <div className='flex space-x-2 justify-center'>
         </div>

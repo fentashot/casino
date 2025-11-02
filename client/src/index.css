@@ -71,6 +71,12 @@ button:focus-visible {
   }
 } */
 
+.small-font {
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 0.75rem;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -136,14 +142,18 @@ button:focus-visible {
   }
 
   .cellBase {
-    @apply select-none cursor-pointer rounded-md text-sm font-medium text-white text-center transition-colors;
+    @apply pointer-events-none rounded-md text-sm font-medium text-white text-center transition-colors;
   }
 
   .badge {
-    @apply absolute bottom-1 right-1 bg-yellow-300 text-black text-xs px-1 rounded-sm z-10; 
+    @apply pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 bg-yellow-300 text-black small-font  px-1 rounded-sm z-10 font-medium;
   }
 
-  .badge-pocket {
-    @apply absolute bottom-1 left-1 bg-yellow-300 text-black text-xs px-1 rounded-sm z-10; 
+  .badge-corner {
+    @apply pointer-events-none absolute right-2 bottom-2 bg-yellow-300 text-black small-font  px-1 rounded-sm z-10 font-medium;
+  }
+
+  .badge-corner-small {
+    @apply pointer-events-none absolute bottom-1 left-12 bg-yellow-300 text-black small-font  px-1 rounded-sm z-10 font-medium;
   }
 }
