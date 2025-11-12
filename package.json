@@ -6,8 +6,11 @@
     "db:push": "bun run drizzle-kit push",
     "build": "bun build src/index.ts --outdir dist",
     "start": "bun run dist/index.js",
-    "docker:build": "docker build -t expense-tracker .",
-    "docker:run": "docker run -p 3000:3000 expense-tracker --env-file .env"
+    "d:build": "docker build -t expense-tracker .",
+    "d:runp": "docker run --rm -p 0.0.0.0:3000:3000 --env-file .env expense-tracker",
+    "d:run": "docker run --rm -p 3000:3000 --env-file .env expense-tracker",
+    "d:dev": "docker build -t expense-tracker . && docker run --rm -p 3000:3000 --env-file .env expense-tracker",
+    "cert:gen": "mkdir -p certs && openssl req -x509 -newkey rsa:4096 -keyout certs/key.pem -out certs/cert.pem -days 365 -nodes -subj '/CN=localhost'"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.4.3",

@@ -117,6 +117,7 @@ export const casinoRoutes = new Hono<Vars>()
     return c.json({ seed: seedRecord.seed });
   })
   .post('/spin', zValidator('json', spinRequestSchema), async (c) => {
+    
     const { id: userId } = c.get('user') as User;
     const body = c.req.valid('json');
 

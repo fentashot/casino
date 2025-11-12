@@ -5,6 +5,7 @@ import { serveStatic } from "hono/bun";
 import { auth, useAuthMiddleware } from "./auth";
 import { cors } from "hono/cors";
 import { casinoRoutes } from "./routes/casino";
+import { readFileSync } from "fs";
 
 interface Vars {
     Variables: {
@@ -20,7 +21,7 @@ app.use("*", logger());
 app.use(
     "/api/auth/*",
     cors({
-        origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+        origin: ["http://localhost:3000", "http://127.0.0.1:3000", "http://0.0.0.0:3000", "http://100.104.2.222:3000"],
         allowHeaders: ["Content-Type", "Authorization"],
         allowMethods: ["POST", "GET", "OPTIONS"],
         exposeHeaders: ["Content-Length"],
@@ -39,16 +40,27 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => {
     return auth.handler(c.req.raw);
 });
 
-app.get("*", serveStatic({ root: "./client/dist", onNotFound(path, c) {
-    c.text("Not Found", 404);
-}, }));
-// // app.get("*", serveStatic({ path: "./client/dist/index.html" }));
+app.get("*", serveStatic({
+    root: "./client/dist", onNotFound(path, c) {
+        c.text("Not Found", 404);
+    },
+}));
 
+app.get("*", serveStatic({ path: "./client/dist/index.html" }));
+
+
+const useSSL = process.env.USE_SSL === 'true';
 
 const port = Number(process.env.PORT) || 2137;
 
 export default {
     port,
     fetch: app.fetch,
+    ...(useSSL && {
+        tls: {
+            key: readFileSync("./certs/key.pem"),
+            cert: readFileSync("./certs/cert.pem"),
+        }
+    })
 };
 export type ApiRoutes = typeof apiRoutes;

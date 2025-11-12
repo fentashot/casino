@@ -1,0 +1,21 @@
+# Ignore node modules and local artifacts
+node_modules
+**/node_modules
+npm-debug.log
+pnpm-lock.yaml
+yarn.lock
+.DS_Store
+.git
+.vscode
+.env
+
+# Build outputs (we build client inside the container so ignore client/dist from context)
+dist
+client/dist
+
+# Misc
+coverage
+build
+.cache
+
+!certs

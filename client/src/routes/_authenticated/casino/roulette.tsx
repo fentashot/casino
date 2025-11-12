@@ -6,7 +6,7 @@ import { SpinResponse } from '@server/types'
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 
-export const Route = createFileRoute('/_authenticated/casino/roulette')({
+export const Route = createFileRoute('/_authenticated/casino/r')({
   component: Roulette,
 })
 
@@ -16,29 +16,19 @@ type Result = {
 }
 
 function Roulette() {
+  const { user } = useAuth();
+
   const [result, setResult] = useState<Result | null>(null);
-  // const [disabled, setDisabled] = useState(false);
   const [data, setData] = useState<SpinResponse | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [disableBetting, setDisableBetting] = useState(false);
+  const [balance, setBalance] = useState(user?.balance || 0);
 
-  const { user } = useAuth();
-
-  const [selection, setSelection] = useState<RouletteSelection>({
-    type: "straight",
-    numbers: [],
-    amount: 10,
-    color: undefined,
-    choice: undefined,
-  })
-
-
-
+  // batched place bets handler
   const handlePlaceBets = async (bets: RouletteSelection[]) => {
     setShowResult(false)
     try {
       setDisableBetting(true);
-
       const res = await api.casino.spin.$post({
         json: {
           clientSeed: '8293yr8wehdu2',
@@ -54,18 +44,17 @@ function Roulette() {
       });
 
       const data = await res.json();
-
-      if (res.ok) {
-        const spin = data as SpinResponse;
-        if (spin.result) {
-          setResult(spin.result);
-        }
-        setData(spin);
+      if (res.ok && data && typeof data === 'object' && 'result' in data) {
+        const spin = data as unknown as SpinResponse
+        setResult(spin.result)
+        setBalance(balance - spin.totalBet)
+        setData(spin as SpinResponse)
       }
-      return { success: true, error: null };
+
+      return { success: true, error: null }
     } catch (error) {
-      setDisableBetting(false);
-      return { success: false, error };
+      setDisableBetting(false)
+      return { success: false, error }
     }
   }
 
@@ -81,7 +70,7 @@ function Roulette() {
 
   return (
     <>
-      <section className='mx-auto max-w-[700px] p-2.5 space-y-10 mt-10'>
+      <section className='p-2.5 space-y-10 mt-10'>
         <div className='flex items-center justify-center gap-10'>
           <div className="w-12 h-12 overflow-hidden bg-zinc-700 rounded-md">
             <div
@@ -93,15 +82,24 @@ function Roulette() {
               </div>
             </div>
           </div>
-          <AnimatedWheel fontSizeProp={11} size={280} targetNumber={result?.number} onSpinEnd={() => {
+          <AnimatedWheel fontSizeProp={11} size={290} targetNumber={result?.number} onSpinEnd={() => {
             setDisableBetting(false);
             setShowResult(true)
+            setBalance(data?.newBalance || user?.balance || 0)
+
           }} />
         </div>
         <div>
-          <RouletteControls onPlaceBets={handlePlaceBets} value={selection} onChange={setSelection} balance={data?.newBalance || user?.balance} disableBet={disableBetting} />
+          <RouletteControls onPlaceBets={handlePlaceBets} balance={balance} disableBet={disableBetting} />
         </div>
-        <div className='flex space-x-2 justify-center'>
+
+        <div className='pt-10 pb-2'>
+          <p>{`Number: ${data?.result.number} `}</p>
+          <p>{`Total Bet: ${data?.totalBet}`}</p>
+          <p>{`Win: ${data?.totalWin}`}</p>
+          <p>{`Client Seed: ${data?.provablyFair.clientSeed}`}</p>
+          <p>{`Server Seed Hash: ${data?.provablyFair.serverSeedHash}`}</p>
+          <p>{`Nonce: ${data?.provablyFair.nonce}`}</p>
         </div>
       </section>
     </>
