@@ -6,7 +6,7 @@ import { SpinResponse } from '@server/types'
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 
-export const Route = createFileRoute('/_authenticated/casino/r')({
+export const Route = createFileRoute('/_authenticated/casino/roulette')({
   component: Roulette,
 })
 
