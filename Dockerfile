@@ -22,8 +22,8 @@ RUN bun x tsc && bun x vite build
 # Runtime image with Bun (bez buildowania serwera - uruchomimy źródło)
 FROM oven/bun:latest AS runtime
 WORKDIR /app
-ENV NODE_ENV=production
-ENV PORT=3000
+# ENV NODE_ENV=production
+# ENV PORT=3000
 
 # Kopiuj źródła zamiast dist
 COPY --from=builder /app/src ./src
@@ -34,9 +34,6 @@ COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/client/dist ./client/dist
 
 EXPOSE 3000
-
-# Skopiuj certyfikaty SSL (jeśli istnieją)
-COPY certs ./certs
 
 # Uruchom źródło TypeScript bezpośrednio przez Bun
 CMD ["bun", "run", "src/index.ts"]
