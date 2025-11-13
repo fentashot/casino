@@ -151,9 +151,9 @@ Cookie: better-auth.session_token=...
 
 ---
 
-### Sign Out
+### Wylogowanie
 
-Sign out user and remove session.
+Wylogowuje użytkownika i usuwa sesję.
 
 **Endpoint:** `POST /api/auth/sign-out`
 
@@ -167,13 +167,13 @@ Sign out user and remove session.
 
 ---
 
-## Expenses
+## Wydatki
 
-All expense endpoints require authentication.
+Wszystkie endpointy wydatków wymagają autentykacji.
 
-### List Expenses
+### Lista wydatków
 
-Get all expenses for the logged-in user.
+Pobiera wszystkie wydatki zalogowanego użytkownika.
 
 **Endpoint:** `GET /api/expenses`
 
@@ -186,13 +186,12 @@ Cookie: better-auth.session_token=...
 **Response:** `200 OK`
 
 ```json
-```json
 {
   "expenses": [
     {
       "id": 1,
       "userId": "usr_123456",
-      "title": "Groceries",
+      "title": "Zakupy spożywcze",
       "amount": "125.50",
       "date": "2025-11-10",
       "createdAt": "2025-11-10T14:30:00.000Z"
@@ -200,27 +199,13 @@ Cookie: better-auth.session_token=...
     {
       "id": 2,
       "userId": "usr_123456",
-      "title": "Gas",
+      "title": "Paliwo",
       "amount": "200.00",
       "date": "2025-11-11",
       "createdAt": "2025-11-11T09:15:00.000Z"
     }
   ]
 }
-```
-
-**Errors:**
-- `401 Unauthorized` - Not authenticated
-
----
-
-### Create Expense
-
-Create a new expense for the logged-in user.
-
-**Endpoint:** `POST /api/expenses`
-
-**Headers:**
 ```
 
 **Błędy:**
@@ -411,38 +396,21 @@ Content-Type: application/json
 **Request Body:**
 
 ```json
-**Request Body:**
-```json
 {
   "clientSeed": "random-client-seed-123",
   "bets": [
     {
       "betType": "color",
       "choice": "red",
-      "amount": 100.00
+      "amount": 100.0
     },
     {
       "betType": "number",
       "choice": "17",
-      "amount": 50.00
+      "amount": 50.0
     }
   ]
 }
-```
-
-**Bet Types (`betType`):**
-- `color` - Color (red/black)
-- `parity` - Parity (even/odd)
-- `number` - Specific number (0-36)
-
-**Validation:**
-- `clientSeed`: string, required, min 1 char
-- `bets`: array, required, min 1 bet, max 10 bets
-- `bet.betType`: "color" | "parity" | "number"
-- `bet.choice`: string (depends on betType)
-- `bet.amount`: number, min 0.01
-
-**Response:** `200 OK`
 ```
 
 **Typy zakładów (`betType`):**

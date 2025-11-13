@@ -40,7 +40,7 @@ function Root() {
                     <>
                         <div>
                             <Link
-                                to="/apps"
+                                to="/games"
                                 className="[&.active]:font-bold"
                             >
                                 Dashboard

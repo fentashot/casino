@@ -24,7 +24,7 @@ export default function LoginForm() {
     const { refreshSession } = useAuth();
 
     //auth callback URL
-    const cbURL = "/apps"
+    const cbURL = "/games"
 
     return (
         <Card className="z-50 rounded-md rounded-t-none min-w-md">
