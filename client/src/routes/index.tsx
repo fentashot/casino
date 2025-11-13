@@ -6,7 +6,7 @@ export const Route = createFileRoute("/")({
         // Redirect if already authenticated
         if (context.auth.isAuthenticated) {
             throw redirect({
-                to: "/apps",
+                to: "/games",
             });
         }
     },

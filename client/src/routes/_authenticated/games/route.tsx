@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/_authenticated/casino')({
+export const Route = createFileRoute('/_authenticated/games')({
   component: () => <Outlet />,
 })
 

@@ -5,7 +5,6 @@ import { serveStatic } from "hono/bun";
 import { auth, useAuthMiddleware } from "./auth";
 import { cors } from "hono/cors";
 import { casinoRoutes } from "./routes/casino";
-import { readFileSync } from "fs";
 
 interface Vars {
     Variables: {
@@ -49,18 +48,10 @@ app.get("*", serveStatic({
 app.get("*", serveStatic({ path: "./client/dist/index.html" }));
 
 
-const useSSL = process.env.USE_SSL === 'true';
-
 const port = Number(process.env.PORT) || 2137;
 
 export default {
     port,
     fetch: app.fetch,
-    ...(useSSL && {
-        tls: {
-            key: readFileSync("./certs/key.pem"),
-            cert: readFileSync("./certs/cert.pem"),
-        }
-    })
 };
 export type ApiRoutes = typeof apiRoutes;

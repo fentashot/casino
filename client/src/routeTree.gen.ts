@@ -15,14 +15,13 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
-import { Route as AuthenticatedAppsRouteImport } from './routes/_authenticated/apps'
+import { Route as AuthenticatedGamesRouteRouteImport } from './routes/_authenticated/games/route'
 import { Route as AuthenticatedExpensesRouteRouteImport } from './routes/_authenticated/expenses/route'
-import { Route as AuthenticatedCasinoRouteRouteImport } from './routes/_authenticated/casino/route'
-import { Route as AuthenticatedCasinoIndexRouteImport } from './routes/_authenticated/casino/index'
+import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games/index'
+import { Route as AuthenticatedGamesRouletteRouteImport } from './routes/_authenticated/games/roulette'
 import { Route as AuthenticatedExpensesTotalRouteImport } from './routes/_authenticated/expenses/total'
 import { Route as AuthenticatedExpensesListRouteImport } from './routes/_authenticated/expenses/list'
 import { Route as AuthenticatedExpensesCreateRouteImport } from './routes/_authenticated/expenses/create'
-import { Route as AuthenticatedCasinoRouletteRouteImport } from './routes/_authenticated/casino/roulette'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -53,9 +52,9 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedAppsRoute = AuthenticatedAppsRouteImport.update({
-  id: '/apps',
-  path: '/apps',
+const AuthenticatedGamesRouteRoute = AuthenticatedGamesRouteRouteImport.update({
+  id: '/games',
+  path: '/games',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedExpensesRouteRoute =
@@ -64,17 +63,16 @@ const AuthenticatedExpensesRouteRoute =
     path: '/expenses',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedCasinoRouteRoute =
-  AuthenticatedCasinoRouteRouteImport.update({
-    id: '/casino',
-    path: '/casino',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedCasinoIndexRoute =
-  AuthenticatedCasinoIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedCasinoRouteRoute,
+const AuthenticatedGamesIndexRoute = AuthenticatedGamesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedGamesRouteRoute,
+} as any)
+const AuthenticatedGamesRouletteRoute =
+  AuthenticatedGamesRouletteRouteImport.update({
+    id: '/roulette',
+    path: '/roulette',
+    getParentRoute: () => AuthenticatedGamesRouteRoute,
   } as any)
 const AuthenticatedExpensesTotalRoute =
   AuthenticatedExpensesTotalRouteImport.update({
@@ -94,27 +92,20 @@ const AuthenticatedExpensesCreateRoute =
     path: '/create',
     getParentRoute: () => AuthenticatedExpensesRouteRoute,
   } as any)
-const AuthenticatedCasinoRouletteRoute =
-  AuthenticatedCasinoRouletteRouteImport.update({
-    id: '/roulette',
-    path: '/roulette',
-    getParentRoute: () => AuthenticatedCasinoRouteRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/casino': typeof AuthenticatedCasinoRouteRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRouteRouteWithChildren
-  '/apps': typeof AuthenticatedAppsRoute
+  '/games': typeof AuthenticatedGamesRouteRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
-  '/casino/roulette': typeof AuthenticatedCasinoRouletteRoute
   '/expenses/create': typeof AuthenticatedExpensesCreateRoute
   '/expenses/list': typeof AuthenticatedExpensesListRoute
   '/expenses/total': typeof AuthenticatedExpensesTotalRoute
-  '/casino/': typeof AuthenticatedCasinoIndexRoute
+  '/games/roulette': typeof AuthenticatedGamesRouletteRoute
+  '/games/': typeof AuthenticatedGamesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -122,13 +113,12 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/expenses': typeof AuthenticatedExpensesRouteRouteWithChildren
-  '/apps': typeof AuthenticatedAppsRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/casino/roulette': typeof AuthenticatedCasinoRouletteRoute
   '/expenses/create': typeof AuthenticatedExpensesCreateRoute
   '/expenses/list': typeof AuthenticatedExpensesListRoute
   '/expenses/total': typeof AuthenticatedExpensesTotalRoute
-  '/casino': typeof AuthenticatedCasinoIndexRoute
+  '/games/roulette': typeof AuthenticatedGamesRouletteRoute
+  '/games': typeof AuthenticatedGamesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -137,15 +127,14 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/_authenticated/casino': typeof AuthenticatedCasinoRouteRouteWithChildren
   '/_authenticated/expenses': typeof AuthenticatedExpensesRouteRouteWithChildren
-  '/_authenticated/apps': typeof AuthenticatedAppsRoute
+  '/_authenticated/games': typeof AuthenticatedGamesRouteRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
-  '/_authenticated/casino/roulette': typeof AuthenticatedCasinoRouletteRoute
   '/_authenticated/expenses/create': typeof AuthenticatedExpensesCreateRoute
   '/_authenticated/expenses/list': typeof AuthenticatedExpensesListRoute
   '/_authenticated/expenses/total': typeof AuthenticatedExpensesTotalRoute
-  '/_authenticated/casino/': typeof AuthenticatedCasinoIndexRoute
+  '/_authenticated/games/roulette': typeof AuthenticatedGamesRouletteRoute
+  '/_authenticated/games/': typeof AuthenticatedGamesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -154,15 +143,14 @@ export interface FileRouteTypes {
     | '/about'
     | '/login'
     | '/register'
-    | '/casino'
     | '/expenses'
-    | '/apps'
+    | '/games'
     | '/profile'
-    | '/casino/roulette'
     | '/expenses/create'
     | '/expenses/list'
     | '/expenses/total'
-    | '/casino/'
+    | '/games/roulette'
+    | '/games/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -170,13 +158,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/expenses'
-    | '/apps'
     | '/profile'
-    | '/casino/roulette'
     | '/expenses/create'
     | '/expenses/list'
     | '/expenses/total'
-    | '/casino'
+    | '/games/roulette'
+    | '/games'
   id:
     | '__root__'
     | '/'
@@ -184,15 +171,14 @@ export interface FileRouteTypes {
     | '/about'
     | '/login'
     | '/register'
-    | '/_authenticated/casino'
     | '/_authenticated/expenses'
-    | '/_authenticated/apps'
+    | '/_authenticated/games'
     | '/_authenticated/profile'
-    | '/_authenticated/casino/roulette'
     | '/_authenticated/expenses/create'
     | '/_authenticated/expenses/list'
     | '/_authenticated/expenses/total'
-    | '/_authenticated/casino/'
+    | '/_authenticated/games/roulette'
+    | '/_authenticated/games/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -247,11 +233,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/apps': {
-      id: '/_authenticated/apps'
-      path: '/apps'
-      fullPath: '/apps'
-      preLoaderRoute: typeof AuthenticatedAppsRouteImport
+    '/_authenticated/games': {
+      id: '/_authenticated/games'
+      path: '/games'
+      fullPath: '/games'
+      preLoaderRoute: typeof AuthenticatedGamesRouteRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/expenses': {
@@ -261,19 +247,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedExpensesRouteRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/casino': {
-      id: '/_authenticated/casino'
-      path: '/casino'
-      fullPath: '/casino'
-      preLoaderRoute: typeof AuthenticatedCasinoRouteRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/casino/': {
-      id: '/_authenticated/casino/'
+    '/_authenticated/games/': {
+      id: '/_authenticated/games/'
       path: '/'
-      fullPath: '/casino/'
-      preLoaderRoute: typeof AuthenticatedCasinoIndexRouteImport
-      parentRoute: typeof AuthenticatedCasinoRouteRoute
+      fullPath: '/games/'
+      preLoaderRoute: typeof AuthenticatedGamesIndexRouteImport
+      parentRoute: typeof AuthenticatedGamesRouteRoute
+    }
+    '/_authenticated/games/roulette': {
+      id: '/_authenticated/games/roulette'
+      path: '/roulette'
+      fullPath: '/games/roulette'
+      preLoaderRoute: typeof AuthenticatedGamesRouletteRouteImport
+      parentRoute: typeof AuthenticatedGamesRouteRoute
     }
     '/_authenticated/expenses/total': {
       id: '/_authenticated/expenses/total'
@@ -296,31 +282,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedExpensesCreateRouteImport
       parentRoute: typeof AuthenticatedExpensesRouteRoute
     }
-    '/_authenticated/casino/roulette': {
-      id: '/_authenticated/casino/roulette'
-      path: '/roulette'
-      fullPath: '/casino/roulette'
-      preLoaderRoute: typeof AuthenticatedCasinoRouletteRouteImport
-      parentRoute: typeof AuthenticatedCasinoRouteRoute
-    }
   }
 }
-
-interface AuthenticatedCasinoRouteRouteChildren {
-  AuthenticatedCasinoRouletteRoute: typeof AuthenticatedCasinoRouletteRoute
-  AuthenticatedCasinoIndexRoute: typeof AuthenticatedCasinoIndexRoute
-}
-
-const AuthenticatedCasinoRouteRouteChildren: AuthenticatedCasinoRouteRouteChildren =
-  {
-    AuthenticatedCasinoRouletteRoute: AuthenticatedCasinoRouletteRoute,
-    AuthenticatedCasinoIndexRoute: AuthenticatedCasinoIndexRoute,
-  }
-
-const AuthenticatedCasinoRouteRouteWithChildren =
-  AuthenticatedCasinoRouteRoute._addFileChildren(
-    AuthenticatedCasinoRouteRouteChildren,
-  )
 
 interface AuthenticatedExpensesRouteRouteChildren {
   AuthenticatedExpensesCreateRoute: typeof AuthenticatedExpensesCreateRoute
@@ -340,17 +303,31 @@ const AuthenticatedExpensesRouteRouteWithChildren =
     AuthenticatedExpensesRouteRouteChildren,
   )
 
+interface AuthenticatedGamesRouteRouteChildren {
+  AuthenticatedGamesRouletteRoute: typeof AuthenticatedGamesRouletteRoute
+  AuthenticatedGamesIndexRoute: typeof AuthenticatedGamesIndexRoute
+}
+
+const AuthenticatedGamesRouteRouteChildren: AuthenticatedGamesRouteRouteChildren =
+  {
+    AuthenticatedGamesRouletteRoute: AuthenticatedGamesRouletteRoute,
+    AuthenticatedGamesIndexRoute: AuthenticatedGamesIndexRoute,
+  }
+
+const AuthenticatedGamesRouteRouteWithChildren =
+  AuthenticatedGamesRouteRoute._addFileChildren(
+    AuthenticatedGamesRouteRouteChildren,
+  )
+
 interface AuthenticatedRouteChildren {
-  AuthenticatedCasinoRouteRoute: typeof AuthenticatedCasinoRouteRouteWithChildren
   AuthenticatedExpensesRouteRoute: typeof AuthenticatedExpensesRouteRouteWithChildren
-  AuthenticatedAppsRoute: typeof AuthenticatedAppsRoute
+  AuthenticatedGamesRouteRoute: typeof AuthenticatedGamesRouteRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedCasinoRouteRoute: AuthenticatedCasinoRouteRouteWithChildren,
   AuthenticatedExpensesRouteRoute: AuthenticatedExpensesRouteRouteWithChildren,
-  AuthenticatedAppsRoute: AuthenticatedAppsRoute,
+  AuthenticatedGamesRouteRoute: AuthenticatedGamesRouteRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
 }
 
