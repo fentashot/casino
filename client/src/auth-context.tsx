@@ -51,6 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await signOut();
         setIsAuthenticated(false);
         setUser(null);
+        localStorage.removeItem("better-auth.session_token");
+        localStorage.removeItem("better-auth.state");
         location.reload();
     };
 

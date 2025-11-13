@@ -25,7 +25,7 @@ function RouteComponent() {
           <Link to="/casino/roulette">
             <div className="rounded-lg border bg-card p-4 text-card-foreground shadow-sm hover:cursor-pointer hover:scale-[1.02] hover:border-zinc-600 transition">
               <div className="text-sm text-muted-foreground">{`"error {msg:'pogchamp'}"`}</div>
-              <div className="mt-2 text-3xl font-semibold">Pogchamp Casino 💎</div>
+              <div className="mt-2 text-3xl font-semibold">Pogchamp Casino ss💎</div>
             </div>
           </Link>
         </div>

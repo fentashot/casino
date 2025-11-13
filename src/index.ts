@@ -21,7 +21,7 @@ app.use("*", logger());
 app.use(
     "/api/auth/*",
     cors({
-        origin: ["http://localhost:3000", "http://127.0.0.1:3000", "http://0.0.0.0:3000", "http://100.104.2.222:3000"],
+        origin: ["http://localhost:3000", "http://127.0.0.1:3000", "http://0.0.0.0:3000", process.env.BETTER_AUTH_URL!],
         allowHeaders: ["Content-Type", "Authorization"],
         allowMethods: ["POST", "GET", "OPTIONS"],
         exposeHeaders: ["Content-Length"],
