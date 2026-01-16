@@ -16,7 +16,6 @@ type Props = {
   balance?: number
   defaultAmount?: number
   disableBet?: boolean
-  // Called with an array of bets to place in a single spin
   onPlaceBets?: (bets: RouletteSelection[]) => Promise<{ success: boolean; error?: unknown }>
 }
 
@@ -39,7 +38,6 @@ export default function RouletteControls({ defaultAmount = 10, disableBet = fals
 
   useEffect(() => setBetAmount(defaultAmount), [defaultAmount])
 
-  // Simple balance change tracking for flash effect
   useEffect(() => {
     if (balance !== undefined) {
       setBalanceChanged(true)
@@ -67,7 +65,6 @@ export default function RouletteControls({ defaultAmount = 10, disableBet = fals
     if (disableBet) return
     const removeValue = betAmount * chipCount
 
-    // Remove from pendingStacks
     setPendingStacks(prev => {
       const current = prev[key]
       if (!current || current.total <= removeValue) {
@@ -192,9 +189,12 @@ export default function RouletteControls({ defaultAmount = 10, disableBet = fals
     if (!basket.length || !onPlaceBets) return
     setLoading(true)
     try {
-      await onPlaceBets(basket)
-      setBasket([])
-      setPendingStacks({}) // Clear pending stacks after successful bet placement
+      const result = await onPlaceBets(basket)
+      if (result.success) {
+        setBasket([])
+        setPendingStacks({}) // Clear pending stacks after successful bet placement
+      }
+      // If not successful, basket and pendingStacks remain for user to modify
     }
     finally { setLoading(false) }
   }
@@ -216,7 +216,7 @@ export default function RouletteControls({ defaultAmount = 10, disableBet = fals
   return (
     <div className='max-w-fit mx-auto space-y-3'>
       <div className="max-w-fit mx-auto rounded-xl bg-[#111212] p-5 text-white">
-        <div className="grid grid-cols-3 grid-rows-2 grid-cols-[auto,1fr,auto] grid-rows-[auto,1fr]">
+        <div className="grid grid-cols-[auto,1fr,auto] grid-rows-[auto,1fr]">
           <div className='relative'>
             <button
               onMouseDown={(e) => handleClick('straight:0', e)}

@@ -43,8 +43,21 @@ function Roulette() {
         },
       });
 
-      const data = await res.json();
-      if (res.ok && data && typeof data === 'object' && 'result' in data) {
+      const data = await res.json() as SpinResponse | { error: string };
+
+      // Handle insufficient funds error
+      if (!res.ok) {
+        setDisableBetting(false);
+        if (res.status === 402) {
+          alert('Niewystarczające środki na koncie!');
+        } else {
+          const errorMsg = 'error' in data ? data.error : 'Nieznany błąd';
+          alert('Błąd podczas obstawiania: ' + errorMsg);
+        }
+        return { success: false, error: 'error' in data ? data.error : 'Request failed' }
+      }
+
+      if (data && typeof data === 'object' && 'result' in data) {
         const spin = data as unknown as SpinResponse
         setResult(spin.result)
         setBalance(balance - spin.totalBet)

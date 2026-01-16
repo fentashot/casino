@@ -1,7 +1,9 @@
 {
   "name": "expense-tracker",
   "scripts": {
-    "dev": "bun --bun run --hot src/index.ts",
+    "dev": "concurrently -n api,web -c yellow,blue \"bun run dev:server\" \"bun run dev:client\"",
+    "dev:server": "bun --bun run --hot src/index.ts",
+    "dev:client": "bun run --cwd client dev",
     "db:gen": "bun run drizzle-kit generate",
     "db:push": "bun run drizzle-kit push",
     "build": "bun build src/index.ts --outdir dist",
@@ -24,6 +26,8 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "baseline-browser-mapping": "latest",
+    "concurrently": "^8.2.2",
     "drizzle-kit": "^0.31.5",
     "tsx": "^4.20.6"
   }

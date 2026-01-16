@@ -1,86 +1,99 @@
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useForm } from '@tanstack/react-form'
-import type { FieldApi } from '@tanstack/react-form'
-import { Loader2Icon } from 'lucide-react'
-import { api, getAllExpensesQueryOptions, getTotalSpentQueryOptions } from '@/lib/api'
-import { createExpenseSchema } from '@server/zodTypes'
-import { Calendar } from '@/components/ui/calendar'
-import { useQueryClient } from '@tanstack/react-query'
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useForm } from "@tanstack/react-form";
+import type { FieldApi } from "@tanstack/react-form";
+import { Loader2Icon } from "lucide-react";
+import {
+  api,
+  getAllExpensesQueryOptions,
+  getTotalSpentQueryOptions,
+} from "@/lib/api";
+import { createExpenseSchema } from "@server/zodTypes";
+import { Calendar } from "@/components/ui/calendar";
+import { useQueryClient } from "@tanstack/react-query";
 
-export const Route = createFileRoute('/_authenticated/expenses/create')({
+export const Route = createFileRoute("/_authenticated/expenses/create")({
   component: CreateExpense,
-})
+});
 
 type FormValues = {
-  title: string
-  amount: number
-  date: string
+  title: string;
+  amount: number;
+  date: string;
+};
+
+interface CustomFieldInfoProps<
+  TName extends keyof FormValues = keyof FormValues,
+> {
+  field: FieldApi<FormValues, TName>;
 }
 
-interface CustomFieldInfoProps<TName extends keyof FormValues = keyof FormValues> {
-  field: FieldApi<FormValues, TName>
-}
-
-function FieldInfo<TName extends keyof FormValues>({ field }: CustomFieldInfoProps<TName>) {
+function FieldInfo<TName extends keyof FormValues>({
+  field,
+}: CustomFieldInfoProps<TName>) {
   return (
     <>
       {field.state.meta.isTouched && field.state.meta.errors.length ? (
-        <em>{field.state.meta.errors.join(', ')}</em>
+        <em>{field.state.meta.errors.join(", ")}</em>
       ) : null}
-      {field.state.meta.isValidating ? 'Validating...' : null}
+      {field.state.meta.isValidating ? "Validating..." : null}
     </>
-  )
+  );
 }
 function CreateExpense() {
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const form = useForm({
     defaultValues: {
-      title: '',
+      title: "",
       amount: 0,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split("T")[0],
     },
     validators: {
-      onChange: createExpenseSchema
+      onChange: createExpenseSchema,
     },
     onSubmit: async ({ value }) => {
       // Do something with form data
-      console.log(value)
-      const res = await api.expenses.$post({ json: value })
+      console.log(value);
+      const res = await api.expenses.$post({ json: value });
       if (!res.ok) {
-        throw new Error('Failed to create expense')
+        throw new Error("Failed to create expense");
       }
 
-
-      const newExpense = await res.json()
-      const existingExpenses = await queryClient.ensureQueryData(getAllExpensesQueryOptions)
-      queryClient.setQueryData(getAllExpensesQueryOptions.queryKey, ({
+      const newExpense = await res.json();
+      const existingExpenses = await queryClient.ensureQueryData(
+        getAllExpensesQueryOptions
+      );
+      queryClient.setQueryData(getAllExpensesQueryOptions.queryKey, {
         ...existingExpenses,
-        expenses: [...existingExpenses.expenses, newExpense]
-      }))
+        expenses: [...existingExpenses.expenses, newExpense],
+      });
 
-      queryClient.setQueryData(getTotalSpentQueryOptions.queryKey, (oldData?: { total: number }) => {
-        return {
-          total: (oldData?.total || 0) + Number(newExpense.amount)
+      queryClient.setQueryData(
+        getTotalSpentQueryOptions.queryKey,
+        (oldData?: { total: number }) => {
+          return {
+            total: (oldData?.total || 0) + Number(newExpense.amount),
+          };
         }
-      })
+      );
 
-      navigate({ to: '/expenses/list' })
+      navigate({ to: "/expenses/list" });
     },
-  })
+  });
+
   return (
     <div className="max-w-lg mx-auto mt-2 space-y-2">
       <h2 className="text-2xl">Create Expense</h2>
       <form
         className="space-y-3"
         onSubmit={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          form.handleSubmit()
+          e.preventDefault();
+          e.stopPropagation();
+          form.handleSubmit();
         }}
       >
         <form.Field
@@ -122,7 +135,11 @@ function CreateExpense() {
               <Calendar
                 mode="single"
                 selected={new Date(field.state.value)}
-                onSelect={(date) => field.handleChange((date ?? new Date()).toISOString().split('T')[0])}
+                onSelect={(date) =>
+                  field.handleChange(
+                    (date ?? new Date()).toISOString().split("T")[0]
+                  )
+                }
                 className="rounded-md border shadow"
               />
               <FieldInfo field={field} />
@@ -136,12 +153,12 @@ function CreateExpense() {
               {isSubmitting ? (
                 <Loader2Icon className="animate-spin" />
               ) : (
-                'Submit'
+                "Submit"
               )}
             </Button>
           )}
         />
       </form>
     </div>
-  )
+  );
 }
