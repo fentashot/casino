@@ -1,1 +1,0 @@
-ALTER TABLE `user_balance` ADD `last_nonce` integer DEFAULT 0 NOT NULL;

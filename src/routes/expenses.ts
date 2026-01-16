@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { db } from "../db/turso";
+import { db } from "../db/postgres";
 import { expenseTable } from "../db/schema";
 import { eq, sql } from "drizzle-orm";
 import { createExpenseSchema } from "../zodTypes";

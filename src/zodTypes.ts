@@ -45,4 +45,5 @@ export const spinRequestSchema = z.object({
   bets: z.array(betSchema),
   clientSeed: z.string().min(1),
   nonce: z.number().int().nonnegative(),
+  idempotencyKey: z.string().min(16).max(64).optional(),
 });

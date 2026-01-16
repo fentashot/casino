@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { db } from "../db/turso";
+import { db } from "../db/postgres";
 import { casinoServerSeed, casinoSpin, casinoBet, userBalance } from "../db/schema";
 import { eq } from "drizzle-orm";
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { z } from "zod";
 import { betSchema, spinRequestSchema } from "../zodTypes";
 import { SpinResponse, User, Vars } from "../types";
@@ -111,16 +111,49 @@ export const casinoRoutes = new Hono<Vars>()
     // Mark seed as revealed
     await db
       .update(casinoServerSeed)
-      .set({ revealedAt: new Date().toISOString() })
+      .set({ revealedAt: new Date() })
       .where(eq(casinoServerSeed.id, seedId));
 
     return c.json({ seed: seedRecord.seed });
   })
   .post('/spin', zValidator('json', spinRequestSchema), async (c) => {
-    
+
     const { id: userId } = c.get('user') as User;
     const body = c.req.valid('json');
 
+    // Sprawdź idempotency - jeśli już był taki spin, zwróć poprzedni wynik
+    if (body.idempotencyKey) {
+      const existingSpin = await db.query.casinoSpin.findFirst({
+        where: eq(casinoSpin.idempotencyKey, body.idempotencyKey),
+        with: { bets: true },
+      });
+
+      if (existingSpin) {
+        // Pobierz aktualny balance
+        const currentBalance = await db.query.userBalance.findFirst({
+          where: eq(userBalance.userId, userId),
+        });
+
+        // Zwróć poprzedni wynik bez ponownego wykonania
+        const serverSeed = await db.query.casinoServerSeed.findFirst({
+          where: eq(casinoServerSeed.id, existingSpin.serverSeedId),
+        });
+
+        return c.json({
+          result: { number: existingSpin.number, color: existingSpin.color as 'red' | 'black' | 'green' },
+          totalWin: Number(existingSpin.totalWin),
+          totalBet: Number(existingSpin.totalBet),
+          newBalance: Number(currentBalance?.balance || 0),
+          provablyFair: {
+            clientSeed: existingSpin.clientSeed,
+            serverSeedHash: serverSeed?.hash || '',
+            nonce: existingSpin.nonce,
+            hmac: existingSpin.hmac,
+          },
+          cached: true,
+        } satisfies SpinResponse & { cached: boolean });
+      }
+    }
 
     // Get active server seed
     const serverSeedRecord = await db.query.casinoServerSeed.findFirst({
@@ -143,8 +176,14 @@ export const casinoRoutes = new Hono<Vars>()
       return c.json({ error: 'insufficient_funds' }, 402);
     }
 
-    if (body.nonce !== userBalanceRecord.lastNonce + 1) {
-      body.nonce = userBalanceRecord.lastNonce + 1;
+    // Walidacja nonce - musi być dokładnie lastNonce + 1
+    const expectedNonce = userBalanceRecord.lastNonce + 1;
+    if (body.nonce !== expectedNonce) {
+      return c.json({
+        error: 'invalid_nonce',
+        expectedNonce,
+        receivedNonce: body.nonce
+      }, 400);
     }
 
     // Generate spin result
@@ -158,42 +197,47 @@ export const casinoRoutes = new Hono<Vars>()
       totalWin += calculateWinnings(bet, { number, color });
     }
 
-    // Create spin record
-    const spinId = crypto.randomBytes(16).toString('hex');
-    await db.insert(casinoSpin).values({
-      id: spinId,
-      userId,
-      clientSeed: body.clientSeed,
-      nonce: body.nonce,
-      hmac,
-      serverSeedId: serverSeedRecord.id,
-      number,
-      color,
-      totalBet: totalBet.toString(),
-      totalWin: totalWin.toString(),
-    });
-
-    // Create bet records
-    for (const bet of body.bets) {
-      const win = calculateWinnings(bet, { number, color });
-      await db.insert(casinoBet).values({
-        id: crypto.randomBytes(16).toString('hex'),
-        spinId,
-        type: bet.type,
-        numbers: JSON.stringify(bet.numbers),
-        amount: bet.amount.toString(),
-        color: bet.color,
-        choice: bet.choice,
-        win: win.toString(),
-      });
-    }
-
-    // Update user balance
     const newBalance = Number(userBalanceRecord.balance) - totalBet + totalWin;
-    await db
-      .update(userBalance)
-      .set({ balance: newBalance.toString(), lastNonce: body.nonce })
-      .where(eq(userBalance.userId, userId));
+    const spinId = crypto.randomBytes(16).toString('hex');
+
+    // Wykonaj wszystkie operacje w transakcji
+    await db.transaction(async (tx) => {
+      // Create spin record
+      await tx.insert(casinoSpin).values({
+        id: spinId,
+        userId,
+        clientSeed: body.clientSeed,
+        nonce: body.nonce,
+        hmac,
+        serverSeedId: serverSeedRecord.id,
+        number,
+        color,
+        totalBet: totalBet.toString(),
+        totalWin: totalWin.toString(),
+        idempotencyKey: body.idempotencyKey || null,
+      });
+
+      // Create bet records
+      for (const bet of body.bets) {
+        const win = calculateWinnings(bet, { number, color });
+        await tx.insert(casinoBet).values({
+          id: crypto.randomBytes(16).toString('hex'),
+          spinId,
+          type: bet.type,
+          numbers: JSON.stringify(bet.numbers),
+          amount: bet.amount.toString(),
+          color: bet.color,
+          choice: bet.choice,
+          win: win.toString(),
+        });
+      }
+
+      // Update user balance
+      await tx
+        .update(userBalance)
+        .set({ balance: newBalance.toString(), lastNonce: body.nonce })
+        .where(eq(userBalance.userId, userId));
+    });
 
     const res: SpinResponse = {
       result: { number, color },
@@ -207,11 +251,6 @@ export const casinoRoutes = new Hono<Vars>()
         hmac,
       },
     };
-
-    console.log('Spin result:', res);
-    console.log('User balance after spin:', newBalance);
-    console.log('User last nonce after spin:', body.nonce);
-
 
     return c.json(res);
   })

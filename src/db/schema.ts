@@ -1,50 +1,46 @@
 import {
-    sqliteTable,
+    pgTable,
     text,
     integer,
     numeric,
+    boolean,
+    timestamp,
     index,
-} from "drizzle-orm/sqlite-core";
+    serial,
+} from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
-export const expenseTable = sqliteTable(
+// ============ Expenses ============
+export const expenseTable = pgTable(
     "expense_table",
     {
-        id: integer().primaryKey({ autoIncrement: true }),
-        userId: text().notNull(),
-        title: text().notNull(),
-        amount: numeric().notNull(),
-        date: text().notNull(),
-        createdAt: text().notNull(),
+        id: serial("id").primaryKey(),
+        userId: text("user_id").notNull(),
+        title: text("title").notNull(),
+        amount: numeric("amount").notNull(),
+        date: text("date").notNull(),
+        createdAt: timestamp("created_at").defaultNow().notNull(),
     },
-    (table) => {
-        return [index("userIdIndex").on(table.userId)];
-    }
+    (table) => [index("expense_user_id_idx").on(table.userId)]
 );
 
-export const user = sqliteTable("user", {
+// ============ Auth (Better-Auth) ============
+export const user = pgTable("user", {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
     email: text("email").notNull().unique(),
-    emailVerified: integer("email_verified", { mode: "boolean" })
-        .default(false)
-        .notNull(),
+    emailVerified: boolean("email_verified").default(false).notNull(),
     image: text("image"),
-    createdAt: text("created_at").default("CURRENT_TIMESTAMP").notNull(),
-    updatedAt: text("updated_at")
-        .default("CURRENT_TIMESTAMP")
-        .$onUpdate(() => "CURRENT_TIMESTAMP")
-        .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 });
 
-export const session = sqliteTable("session", {
+export const session = pgTable("session", {
     id: text("id").primaryKey(),
-    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
     token: text("token").notNull().unique(),
-    createdAt: text("created_at").default("CURRENT_TIMESTAMP").notNull(),
-    updatedAt: text("updated_at")
-        .default("CURRENT_TIMESTAMP")
-        .$onUpdate(() => "CURRENT_TIMESTAMP")
-        .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
     userId: text("user_id")
@@ -52,7 +48,7 @@ export const session = sqliteTable("session", {
         .references(() => user.id, { onDelete: "cascade" }),
 });
 
-export const account = sqliteTable("account", {
+export const account = pgTable("account", {
     id: text("id").primaryKey(),
     accountId: text("account_id").notNull(),
     providerId: text("provider_id").notNull(),
@@ -62,78 +58,127 @@ export const account = sqliteTable("account", {
     accessToken: text("access_token"),
     refreshToken: text("refresh_token"),
     idToken: text("id_token"),
-    accessTokenExpiresAt: integer("access_token_expires_at", {
-        mode: "timestamp",
-    }),
-    refreshTokenExpiresAt: integer("refresh_token_expires_at", {
-        mode: "timestamp",
-    }),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
     scope: text("scope"),
     password: text("password"),
-    createdAt: text("created_at").default("CURRENT_TIMESTAMP").notNull(),
-    updatedAt: text("updated_at")
-        .default("CURRENT_TIMESTAMP")
-        .$onUpdate(() => "CURRENT_TIMESTAMP")
-        .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 });
 
-export const verification = sqliteTable("verification", {
+export const verification = pgTable("verification", {
     id: text("id").primaryKey(),
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
-    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
-    createdAt: text("created_at").default("CURRENT_TIMESTAMP").notNull(),
-    updatedAt: text("updated_at")
-        .default("CURRENT_TIMESTAMP")
-        .$onUpdate(() => "CURRENT_TIMESTAMP")
-        .notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 });
 
-export const casinoServerSeed = sqliteTable("casino_server_seed", {
+// ============ Casino ============
+export const casinoServerSeed = pgTable("casino_server_seed", {
     id: text("id").primaryKey(),
     seed: text("seed").notNull(),
     hash: text("hash").notNull(),
-    active: integer("active", { mode: "boolean" }).default(true).notNull(),
-    createdAt: text("created_at").default("CURRENT_TIMESTAMP").notNull(),
-    revealedAt: text("revealed_at"),
+    active: boolean("active").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    revealedAt: timestamp("revealed_at"),
 });
 
-export const casinoSpin = sqliteTable("casino_spin", {
-    id: text("id").primaryKey(),
-    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-    clientSeed: text("client_seed").notNull(),
-    nonce: integer("nonce").notNull(),
-    hmac: text("hmac").notNull(),
-    serverSeedId: text("server_seed_id").notNull().references(() => casinoServerSeed.id),
-    number: integer("number").notNull(),
-    color: text("color").notNull(),
-    totalBet: numeric("total_bet").notNull(),
-    totalWin: numeric("total_win").notNull(),
-    createdAt: text("created_at").default("CURRENT_TIMESTAMP").notNull(),
-}, (table) => {
-    return [index("userIdSpinIndex").on(table.userId)];
-});
+export const casinoSpin = pgTable(
+    "casino_spin",
+    {
+        id: text("id").primaryKey(),
+        userId: text("user_id")
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        clientSeed: text("client_seed").notNull(),
+        nonce: integer("nonce").notNull(),
+        hmac: text("hmac").notNull(),
+        serverSeedId: text("server_seed_id")
+            .notNull()
+            .references(() => casinoServerSeed.id),
+        number: integer("number").notNull(),
+        color: text("color").notNull(),
+        totalBet: numeric("total_bet").notNull(),
+        totalWin: numeric("total_win").notNull(),
+        idempotencyKey: text("idempotency_key").unique(),
+        createdAt: timestamp("created_at").defaultNow().notNull(),
+    },
+    (table) => [
+        index("spin_user_id_idx").on(table.userId),
+        index("spin_idempotency_key_idx").on(table.idempotencyKey),
+    ]
+);
 
-export const casinoBet = sqliteTable("casino_bet", {
-    id: text("id").primaryKey(),
-    spinId: text("spin_id").notNull().references(() => casinoSpin.id, { onDelete: "cascade" }),
-    type: text("type").notNull(),
-    numbers: text("numbers").notNull(), // JSON array
-    amount: numeric("amount").notNull(),
-    color: text("color"),
-    choice: text("choice"),
-    win: numeric("win").notNull(),
-    createdAt: text("created_at").default("CURRENT_TIMESTAMP").notNull(),
-}, (table) => {
-    return [index("spinIdIndex").on(table.spinId)];
-});
+export const casinoBet = pgTable(
+    "casino_bet",
+    {
+        id: text("id").primaryKey(),
+        spinId: text("spin_id")
+            .notNull()
+            .references(() => casinoSpin.id, { onDelete: "cascade" }),
+        type: text("type").notNull(),
+        numbers: text("numbers").notNull(),
+        amount: numeric("amount").notNull(),
+        color: text("color"),
+        choice: text("choice"),
+        win: numeric("win").notNull(),
+        createdAt: timestamp("created_at").defaultNow().notNull(),
+    },
+    (table) => [index("bet_spin_id_idx").on(table.spinId)]
+);
 
-export const userBalance = sqliteTable("user_balance", {
-    userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
-    lastNonce: integer('last_nonce').notNull().default(0), // dodaj tę linię
+export const userBalance = pgTable("user_balance", {
+    userId: text("user_id")
+        .primaryKey()
+        .references(() => user.id, { onDelete: "cascade" }),
+    lastNonce: integer("last_nonce").notNull().default(0),
     balance: numeric("balance").notNull().default("0"),
-    updatedAt: text("updated_at")
-        .default("CURRENT_TIMESTAMP")
-        .$onUpdate(() => "CURRENT_TIMESTAMP")
-        .notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 });
+
+// ============ Relations ============
+export const userRelations = relations(user, ({ many, one }) => ({
+    sessions: many(session),
+    accounts: many(account),
+    expenses: many(expenseTable),
+    spins: many(casinoSpin),
+    balance: one(userBalance, {
+        fields: [user.id],
+        references: [userBalance.userId],
+    }),
+}));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+    user: one(user, {
+        fields: [session.userId],
+        references: [user.id],
+    }),
+}));
+
+export const casinoSpinRelations = relations(casinoSpin, ({ one, many }) => ({
+    user: one(user, {
+        fields: [casinoSpin.userId],
+        references: [user.id],
+    }),
+    serverSeed: one(casinoServerSeed, {
+        fields: [casinoSpin.serverSeedId],
+        references: [casinoServerSeed.id],
+    }),
+    bets: many(casinoBet),
+}));
+
+export const casinoBetRelations = relations(casinoBet, ({ one }) => ({
+    spin: one(casinoSpin, {
+        fields: [casinoBet.spinId],
+        references: [casinoSpin.id],
+    }),
+}));
+
+export const userBalanceRelations = relations(userBalance, ({ one }) => ({
+    user: one(user, {
+        fields: [userBalance.userId],
+        references: [user.id],
+    }),
+}));

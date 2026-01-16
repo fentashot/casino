@@ -1,7 +1,8 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "./db/turso";
+import { db } from "./db/postgres";
 import { createMiddleware } from "hono/factory";
+import { ne } from "drizzle-orm";
 
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
@@ -35,6 +36,7 @@ export const useAuthMiddleware = createMiddleware(async (c, next) => {
         const session = await auth.api.getSession({
             headers: c.req.raw.headers,
         });
+
 
         if (!session) {
             c.set("user", null);

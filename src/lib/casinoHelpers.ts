@@ -1,72 +1,125 @@
-import crypto from 'crypto';
+// Casino Helpers - Bridge między API a RouletteEngine
+
 import { z } from "zod";
-import { betTypeSchema, betSchema } from "../zodTypes";
+import { betSchema } from "../zodTypes";
+import {
+  RouletteEngine,
+  isRedNumber,
+  PAYOUT_MULTIPLIERS,
+  isNumberBetWinner,
+  isColumnBetWinner,
+  isDozenBetWinner,
+  isParityBetWinner,
+  isColorBetWinner,
+  isRangeBetWinner,
+  type Bet,
+  type SpinResult,
+  type ProvablyFairData,
+  type SpinOutcome,
+  type RouletteNumber
+} from "./roulette";
 
-export const redNumbers = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
-
-export const payoutTable: Record<z.infer<typeof betTypeSchema>, number> = {
-  straight: 36,
-  split: 18,
-  street: 12,
-  corner: 9,
-  line: 6,
-  column: 3,
-  dozen: 3,
-  even_odd: 2,
-  red_black: 2,
-  high_low: 2,
+// Re-export dla bezpośredniego użycia
+export {
+  RouletteEngine,
+  isRedNumber,
+  type Bet,
+  type SpinResult,
+  type ProvablyFairData,
+  type SpinOutcome
 };
 
-//Calculate Winnings
-export function calculateWinnings(bet: z.infer<typeof betSchema>, result: { number: number; color: string }): number {
-  const { type, numbers, amount, color, choice } = bet;
-  switch (type) {
-    case 'straight':
-      return numbers[0] === result.number ? amount * payoutTable.straight : 0;
-    case 'split':
-      return numbers.includes(result.number) ? amount * payoutTable.split : 0;
-    case 'street':
-      return numbers.includes(result.number) ? amount * payoutTable.street : 0;
-    case 'corner':
-      return numbers.includes(result.number) ? amount * payoutTable.corner : 0;
-    case 'line':
-      return numbers.includes(result.number) ? amount * payoutTable.line : 0;
-    case 'column':
-      if (
-        (choice === 'col1' && [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34].includes(result.number)) ||
-        (choice === 'col2' && [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35].includes(result.number)) ||
-        (choice === 'col3' && [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36].includes(result.number))
-      ) return amount * payoutTable.column;
-      return 0;
-    case 'dozen':
-      if (
-        (choice === '1st12' && result.number >= 1 && result.number <= 12) ||
-        (choice === '2nd12' && result.number >= 13 && result.number <= 24) ||
-        (choice === '3rd12' && result.number >= 25 && result.number <= 36)
-      ) return amount * payoutTable.dozen;
-      return 0;
-    case 'even_odd':
-      if (result.number === 0) return 0;
-      if ((choice === 'even' && result.number % 2 === 0) || (choice === 'odd' && result.number % 2 === 1)) return amount * payoutTable.even_odd;
-      return 0;
-    case 'red_black':
-      return result.color === color ? amount * payoutTable.red_black : 0;
-    case 'high_low':
-      if ((choice === 'low' && result.number >= 1 && result.number <= 18) || (choice === 'high' && result.number >= 19 && result.number <= 36)) return amount * payoutTable.high_low;
-      return 0;
-    default:
-      return 0;
+// @deprecated Użyj isRedNumber() zamiast tego
+export const redNumbers = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
+
+// @deprecated Użyj RouletteEngine.getPayoutMultiplier() zamiast tego
+export const payoutTable = PAYOUT_MULTIPLIERS;
+
+// Oblicza wygrane dla zakładu (wrapper dla kompatybilności)
+export function calculateWinnings(
+  bet: z.infer<typeof betSchema>,
+  result: { number: number; color: string }
+): number {
+  const engineBet = convertLegacyBet(bet);
+  const spinResult: SpinResult = {
+    number: result.number as RouletteNumber,
+    color: result.color as SpinResult['color'],
+  };
+
+  if (isBetWinner(engineBet, spinResult)) {
+    return bet.amount * PAYOUT_MULTIPLIERS[bet.type];
   }
-}
-//HMAC
-export function computeHmac(serverSeedHex: string, clientSeed: string, nonce: number): string {
-  const hmac = crypto.createHmac('sha256', Buffer.from(serverSeedHex, 'hex'));
-  hmac.update(`${clientSeed}:${nonce}`);
-  return hmac.digest('hex');
+  return 0;
 }
 
+// Oblicza HMAC dla weryfikacji provably fair
+export function computeHmac(serverSeedHex: string, clientSeed: string, nonce: number): string {
+  const data: ProvablyFairData = { serverSeedHex, clientSeed, nonce };
+  const outcome = RouletteEngine.spin([], data);
+  return outcome.hmac;
+}
+
+// Konwertuje hash na numer ruletki (0-36)
 export function hashToNumber(hashHex: string): number {
-  // We take first 8 hex chars => 32-bit number
   const val = parseInt(hashHex.substring(0, 8), 16);
-  return val % 37; // 0..36
+  return val % 37;
+}
+
+// Obrót koła z użyciem RouletteEngine
+export function spinWheel(
+  bets: z.infer<typeof betSchema>[],
+  provablyFair: ProvablyFairData
+): SpinOutcome {
+  const engineBets = bets.map(convertLegacyBet);
+  return RouletteEngine.spin(engineBets, provablyFair);
+}
+
+// Konwertuje stary format zakładu na nowy typowany format
+function convertLegacyBet(legacyBet: z.infer<typeof betSchema>): Bet {
+  const { type, numbers, amount, color, choice } = legacyBet;
+
+  switch (type) {
+    case 'straight':
+      return { type, numbers: [numbers[0] as RouletteNumber] as const, amount };
+    case 'split':
+      return { type, numbers: [numbers[0] as RouletteNumber, numbers[1] as RouletteNumber] as const, amount };
+    case 'street':
+      return { type, numbers: [numbers[0] as RouletteNumber, numbers[1] as RouletteNumber, numbers[2] as RouletteNumber] as const, amount };
+    case 'corner':
+      return { type, numbers: [numbers[0] as RouletteNumber, numbers[1] as RouletteNumber, numbers[2] as RouletteNumber, numbers[3] as RouletteNumber] as const, amount };
+    case 'line':
+      return { type, numbers: numbers as readonly RouletteNumber[], amount };
+    case 'column':
+      return { type, choice: choice as 'col1' | 'col2' | 'col3', amount };
+    case 'dozen':
+      return { type, choice: choice as '1st12' | '2nd12' | '3rd12', amount };
+    case 'even_odd':
+      return { type, choice: choice as 'even' | 'odd', amount };
+    case 'red_black':
+      return { type, color: color as 'red' | 'black', amount };
+    case 'high_low':
+      return { type, choice: choice as 'low' | 'high', amount };
+  }
+}
+
+// Sprawdza czy zakład wygrał
+function isBetWinner(bet: Bet, result: SpinResult): boolean {
+  switch (bet.type) {
+    case 'straight':
+    case 'split':
+    case 'street':
+    case 'corner':
+    case 'line':
+      return isNumberBetWinner(bet.numbers as readonly number[], result.number);
+    case 'column':
+      return isColumnBetWinner(bet.choice, result.number);
+    case 'dozen':
+      return isDozenBetWinner(bet.choice, result.number);
+    case 'even_odd':
+      return isParityBetWinner(bet.choice, result.number);
+    case 'red_black':
+      return isColorBetWinner(bet.color, result.color);
+    case 'high_low':
+      return isRangeBetWinner(bet.choice, result.number);
+  }
 }
