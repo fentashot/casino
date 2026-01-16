@@ -52,8 +52,8 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 300, targe
       g.connect(ctx.destination);
       o.start();
       o.stop(ctx.currentTime + duration);
-    } catch (e) {
-      console.log('AudioContext error:', e);
+    } catch {
+      // Audio context error - ignore silently
     }
   };
 
@@ -240,7 +240,7 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 300, targe
             />
             <motion.circle
 
-              cx={radius/3}
+              cx={radius / 3}
               cy={0}
               r={radius / 32}
               fill="#ffbf00"
@@ -249,7 +249,7 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 300, targe
             />
             <motion.circle
               cx={0}
-              cy={-radius/3}
+              cy={-radius / 3}
               r={radius / 32}
               fill="#ffbf00"
               fillOpacity={1}
@@ -257,14 +257,14 @@ export const AnimatedWheel: React.FC<Props> = ({ pockets = 37, size = 300, targe
             />
             <motion.circle
               cx={0}
-              cy={radius/3}
+              cy={radius / 3}
               r={radius / 30}
               fill="#ffbf00"
               fillOpacity={1}
 
             />
             <motion.circle
-              cx={-radius/3}
+              cx={-radius / 3}
               cy={0}
               r={radius / 30}
               fill="#ffbf00"

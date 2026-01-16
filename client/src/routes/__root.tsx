@@ -4,12 +4,18 @@ import {
   Link,
   Outlet,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { Toaster } from "@/components/ui/toaster";
+import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 
 interface AuthState {
   isAuthenticated: boolean;
-  user: { id: string; name: string; email: string } | null;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    balance: number;
+    role: "user" | "admin";
+  } | null;
   refreshSession: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -55,7 +61,7 @@ function Root() {
       <hr />
       <Outlet />
       <Toaster />
-      <TanStackRouterDevtools />
+      {process.env.NODE_ENV === "development" && <TanStackRouterDevtools />}
     </>
   );
 }

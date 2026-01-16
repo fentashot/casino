@@ -1,5 +1,5 @@
 {
-  "name": "expense-tracker",
+  "name": "casino",
   "scripts": {
     "dev": "concurrently -n api,web -c yellow,blue \"bun run dev:server\" \"bun run dev:client\"",
     "dev:server": "bun --bun run --hot src/index.ts",
@@ -8,11 +8,10 @@
     "db:push": "bun run drizzle-kit push",
     "build": "bun build src/index.ts --outdir dist",
     "start": "bun run dist/index.js",
-    "d:build": "docker build -t expense-tracker .",
-    "d:runp": "docker run --rm -p 0.0.0.0:3000:3000 --env-file .env expense-tracker",
-    "d:run": "docker run --rm -p 3000:3000 --env-file .env expense-tracker",
-    "d:dev": "docker build -t expense-tracker . && docker run --rm -p 3000:3000 --env-file .env expense-tracker",
-    "cert:gen": "mkdir -p certs && openssl req -x509 -newkey rsa:4096 -keyout certs/key.pem -out certs/cert.pem -days 365 -nodes -subj '/CN=localhost'"
+    "d:build": "docker build -t casino .",
+    "d:runp": "docker run --rm -p 0.0.0.0:3000:3000 --env-file .env casino",
+    "d:run": "docker run --rm -p 3000:3000 --env-file .env casino",
+    "d:dev": "docker build -t casino . && docker run --rm -p 3000:3000 --env-file .env casino"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.4.3",
@@ -21,7 +20,9 @@
     "better-auth": "^1.3.27",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
+    "expense-tracker": ".",
     "hono": "^4.10.1",
+    "hono-rate-limiter": "^0.5.3",
     "postgres": "^3.4.8",
     "zod": "^3.25.76"
   },

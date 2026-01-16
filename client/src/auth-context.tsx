@@ -8,11 +8,14 @@ import {
 import { getSession, signOut } from "./lib/auth-client";
 import { api } from "@/lib/api";
 
+type UserRole = "user" | "admin";
+
 type User = {
     id: string;
     name: string;
     email: string;
     balance: number;
+    role: UserRole;
 }
 
 interface AuthContextType {
@@ -32,19 +35,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const refreshSession = async () => {
         const session = await getSession();
 
-        const res = await api.casino.balance.$get();
-        const balanceData = await res.json();
-
-        if (session?.data) {
-            setIsAuthenticated(true);
-            setUser({ ...session.data.user, balance: balanceData.balance });
-            setIsLoading(false);
-        } else {
-            console.log("Setting authenticated to FALSE - no session data");
+        if (!session?.data) {
             setIsAuthenticated(false);
             setUser(null);
             setIsLoading(false);
+            return;
         }
+
+        // Fetch balance and user role
+        const [balanceRes, meRes] = await Promise.all([
+            api.casino.balance.$get(),
+            fetch('/api/me', { credentials: 'include' }),
+        ]);
+
+        const balanceData = await balanceRes.json();
+        const meData = meRes.ok ? await meRes.json() as { role: UserRole } : { role: 'user' as const };
+
+        setIsAuthenticated(true);
+        setUser({
+            ...session.data.user,
+            balance: balanceData.balance,
+            role: meData.role,
+        });
+        setIsLoading(false);
     };
 
     const logout = async () => {

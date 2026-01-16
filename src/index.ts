@@ -2,9 +2,11 @@ import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { expensesRoutes } from "./routes/expenses";
 import { serveStatic } from "hono/bun";
-import { auth, useAuthMiddleware } from "./auth";
+import { auth, useAuthMiddleware, type AuthUser } from "./auth";
 import { cors } from "hono/cors";
 import { casinoRoutes } from "./routes/casino";
+import { secureHeaders } from "hono/secure-headers";
+import { rateLimiter } from "hono-rate-limiter";
 
 interface Vars {
   Variables: {
@@ -15,7 +17,43 @@ interface Vars {
 
 const app = new Hono<Vars>();
 
+// Security headers
+app.use("*", secureHeaders({
+  xFrameOptions: "DENY",
+  xContentTypeOptions: "nosniff",
+  referrerPolicy: "strict-origin-when-cross-origin",
+  crossOriginEmbedderPolicy: false, // Needed for some assets
+}));
+
 app.use("*", logger());
+
+// Rate limiting for API endpoints (100 requests per minute per IP)
+const apiLimiter = rateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  limit: 100,
+  standardHeaders: "draft-6",
+  keyGenerator: (c) => c.req.header("x-forwarded-for") || c.req.header("cf-connecting-ip") || "unknown",
+});
+
+// Stricter rate limit for auth endpoints (20 requests per minute)
+const authLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-6",
+  keyGenerator: (c) => c.req.header("x-forwarded-for") || c.req.header("cf-connecting-ip") || "unknown",
+});
+
+// Stricter rate limit for casino spin (30 spins per minute)
+const spinLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-6",
+  keyGenerator: (c) => c.req.header("x-forwarded-for") || c.req.header("cf-connecting-ip") || "unknown",
+});
+
+app.use("/api/*", apiLimiter);
+app.use("/api/auth/*", authLimiter);
+app.use("/api/casino/spin", spinLimiter);
 
 app.use(
   "/api/auth/*",
@@ -36,6 +74,18 @@ app.use(
 
 app.use("/api/expenses/*", useAuthMiddleware);
 app.use("/api/casino/*", useAuthMiddleware);
+app.use("/api/me", useAuthMiddleware);
+
+// Get current user info with role
+app.get("/api/me", (c) => {
+  const user = c.get("user") as AuthUser;
+  return c.json({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  });
+});
 
 const apiRoutes = app
   .basePath("/api")

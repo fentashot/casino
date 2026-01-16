@@ -2,12 +2,13 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { db } from "../db/postgres";
 import { casinoServerSeed, casinoSpin, casinoBet, userBalance } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import * as crypto from 'crypto';
 import { z } from "zod";
 import { betSchema, spinRequestSchema } from "../zodTypes";
 import { SpinResponse, User, Vars } from "../types";
 import { calculateWinnings, computeHmac, hashToNumber, redNumbers } from "../lib/casinoHelpers";
+import { requireAdminMiddleware } from "../auth";
 
 // ====== Routes ======
 export const casinoRoutes = new Hono<Vars>()
@@ -26,15 +27,8 @@ export const casinoRoutes = new Hono<Vars>()
 
     return c.json({ serverSeedHash: activeSeed.hash });
   })
-  // Rotate server seed
-  .post('/rotate', async (c) => {
-    // In production: require admin auth
-    const body = await c.req.json();
-    const adminKey: string = body?.adminKey;
-    if (adminKey !== process.env.ADMIN_KEY) {
-      return c.json({ error: 'unauthorized' }, 401);
-    }
-
+  // Rotate server seed (Admin only)
+  .post('/rotate', requireAdminMiddleware, async (c) => {
     // Deactivate current seed
     await db
       .update(casinoServerSeed)
@@ -83,14 +77,10 @@ export const casinoRoutes = new Hono<Vars>()
 
     return c.json({ balance: Number(balance.balance) });
   })
-  .post('/reveal', async (c) => {
+  // Reveal seed for verification (Admin only, only inactive seeds)
+  .post('/reveal', requireAdminMiddleware, async (c) => {
     const body = await c.req.json();
-    const adminKey = body?.adminKey;
     const seedId = body?.seedId;
-
-    if (adminKey !== process.env.ADMIN_KEY) {
-      return c.json({ error: 'unauthorized' }, 401);
-    }
 
     if (!seedId) {
       return c.json({ error: 'missing_seed_id' }, 400);
@@ -262,7 +252,7 @@ export const casinoRoutes = new Hono<Vars>()
     // Get user's spins with bets
     const spins = await db.query.casinoSpin.findMany({
       where: eq(casinoSpin.userId, userId),
-      orderBy: casinoSpin.createdAt,
+      orderBy: desc(casinoSpin.createdAt),
       limit,
       offset,
       with: {
@@ -283,4 +273,20 @@ export const casinoRoutes = new Hono<Vars>()
     });
 
     return c.json({ nextNonce: (balance?.lastNonce || 0) + 1 });
+  })
+  // Admin: Get all seeds history (for seed rotation panel)
+  .get('/seeds', requireAdminMiddleware, async (c) => {
+    const seeds = await db.query.casinoServerSeed.findMany({
+      orderBy: desc(casinoServerSeed.createdAt),
+      columns: {
+        id: true,
+        hash: true,
+        active: true,
+        createdAt: true,
+        revealedAt: true,
+        // Don't expose actual seed unless revealed
+      }
+    });
+
+    return c.json({ seeds });
   });

@@ -5,8 +5,6 @@ export const Route = createFileRoute('/_authenticated/games/')({
   component: RouteComponent,
 })
 
-console.log({ error: { msg: 'pogchamp' } });
-
 function RouteComponent() {
   return (
     <Wrapper>

@@ -16,12 +16,8 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedGamesRouteRouteImport } from './routes/_authenticated/games/route'
-import { Route as AuthenticatedExpensesRouteRouteImport } from './routes/_authenticated/expenses/route'
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games/index'
 import { Route as AuthenticatedGamesRouletteRouteImport } from './routes/_authenticated/games/roulette'
-import { Route as AuthenticatedExpensesTotalRouteImport } from './routes/_authenticated/expenses/total'
-import { Route as AuthenticatedExpensesListRouteImport } from './routes/_authenticated/expenses/list'
-import { Route as AuthenticatedExpensesCreateRouteImport } from './routes/_authenticated/expenses/create'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -57,12 +53,6 @@ const AuthenticatedGamesRouteRoute = AuthenticatedGamesRouteRouteImport.update({
   path: '/games',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedExpensesRouteRoute =
-  AuthenticatedExpensesRouteRouteImport.update({
-    id: '/expenses',
-    path: '/expenses',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedGamesIndexRoute = AuthenticatedGamesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -74,36 +64,14 @@ const AuthenticatedGamesRouletteRoute =
     path: '/roulette',
     getParentRoute: () => AuthenticatedGamesRouteRoute,
   } as any)
-const AuthenticatedExpensesTotalRoute =
-  AuthenticatedExpensesTotalRouteImport.update({
-    id: '/total',
-    path: '/total',
-    getParentRoute: () => AuthenticatedExpensesRouteRoute,
-  } as any)
-const AuthenticatedExpensesListRoute =
-  AuthenticatedExpensesListRouteImport.update({
-    id: '/list',
-    path: '/list',
-    getParentRoute: () => AuthenticatedExpensesRouteRoute,
-  } as any)
-const AuthenticatedExpensesCreateRoute =
-  AuthenticatedExpensesCreateRouteImport.update({
-    id: '/create',
-    path: '/create',
-    getParentRoute: () => AuthenticatedExpensesRouteRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/expenses': typeof AuthenticatedExpensesRouteRouteWithChildren
   '/games': typeof AuthenticatedGamesRouteRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
-  '/expenses/create': typeof AuthenticatedExpensesCreateRoute
-  '/expenses/list': typeof AuthenticatedExpensesListRoute
-  '/expenses/total': typeof AuthenticatedExpensesTotalRoute
   '/games/roulette': typeof AuthenticatedGamesRouletteRoute
   '/games/': typeof AuthenticatedGamesIndexRoute
 }
@@ -112,11 +80,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/expenses': typeof AuthenticatedExpensesRouteRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
-  '/expenses/create': typeof AuthenticatedExpensesCreateRoute
-  '/expenses/list': typeof AuthenticatedExpensesListRoute
-  '/expenses/total': typeof AuthenticatedExpensesTotalRoute
   '/games/roulette': typeof AuthenticatedGamesRouletteRoute
   '/games': typeof AuthenticatedGamesIndexRoute
 }
@@ -127,12 +91,8 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/_authenticated/expenses': typeof AuthenticatedExpensesRouteRouteWithChildren
   '/_authenticated/games': typeof AuthenticatedGamesRouteRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
-  '/_authenticated/expenses/create': typeof AuthenticatedExpensesCreateRoute
-  '/_authenticated/expenses/list': typeof AuthenticatedExpensesListRoute
-  '/_authenticated/expenses/total': typeof AuthenticatedExpensesTotalRoute
   '/_authenticated/games/roulette': typeof AuthenticatedGamesRouletteRoute
   '/_authenticated/games/': typeof AuthenticatedGamesIndexRoute
 }
@@ -143,12 +103,8 @@ export interface FileRouteTypes {
     | '/about'
     | '/login'
     | '/register'
-    | '/expenses'
     | '/games'
     | '/profile'
-    | '/expenses/create'
-    | '/expenses/list'
-    | '/expenses/total'
     | '/games/roulette'
     | '/games/'
   fileRoutesByTo: FileRoutesByTo
@@ -157,11 +113,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/login'
     | '/register'
-    | '/expenses'
     | '/profile'
-    | '/expenses/create'
-    | '/expenses/list'
-    | '/expenses/total'
     | '/games/roulette'
     | '/games'
   id:
@@ -171,12 +123,8 @@ export interface FileRouteTypes {
     | '/about'
     | '/login'
     | '/register'
-    | '/_authenticated/expenses'
     | '/_authenticated/games'
     | '/_authenticated/profile'
-    | '/_authenticated/expenses/create'
-    | '/_authenticated/expenses/list'
-    | '/_authenticated/expenses/total'
     | '/_authenticated/games/roulette'
     | '/_authenticated/games/'
   fileRoutesById: FileRoutesById
@@ -240,13 +188,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGamesRouteRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/expenses': {
-      id: '/_authenticated/expenses'
-      path: '/expenses'
-      fullPath: '/expenses'
-      preLoaderRoute: typeof AuthenticatedExpensesRouteRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/games/': {
       id: '/_authenticated/games/'
       path: '/'
@@ -261,47 +202,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGamesRouletteRouteImport
       parentRoute: typeof AuthenticatedGamesRouteRoute
     }
-    '/_authenticated/expenses/total': {
-      id: '/_authenticated/expenses/total'
-      path: '/total'
-      fullPath: '/expenses/total'
-      preLoaderRoute: typeof AuthenticatedExpensesTotalRouteImport
-      parentRoute: typeof AuthenticatedExpensesRouteRoute
-    }
-    '/_authenticated/expenses/list': {
-      id: '/_authenticated/expenses/list'
-      path: '/list'
-      fullPath: '/expenses/list'
-      preLoaderRoute: typeof AuthenticatedExpensesListRouteImport
-      parentRoute: typeof AuthenticatedExpensesRouteRoute
-    }
-    '/_authenticated/expenses/create': {
-      id: '/_authenticated/expenses/create'
-      path: '/create'
-      fullPath: '/expenses/create'
-      preLoaderRoute: typeof AuthenticatedExpensesCreateRouteImport
-      parentRoute: typeof AuthenticatedExpensesRouteRoute
-    }
   }
 }
-
-interface AuthenticatedExpensesRouteRouteChildren {
-  AuthenticatedExpensesCreateRoute: typeof AuthenticatedExpensesCreateRoute
-  AuthenticatedExpensesListRoute: typeof AuthenticatedExpensesListRoute
-  AuthenticatedExpensesTotalRoute: typeof AuthenticatedExpensesTotalRoute
-}
-
-const AuthenticatedExpensesRouteRouteChildren: AuthenticatedExpensesRouteRouteChildren =
-  {
-    AuthenticatedExpensesCreateRoute: AuthenticatedExpensesCreateRoute,
-    AuthenticatedExpensesListRoute: AuthenticatedExpensesListRoute,
-    AuthenticatedExpensesTotalRoute: AuthenticatedExpensesTotalRoute,
-  }
-
-const AuthenticatedExpensesRouteRouteWithChildren =
-  AuthenticatedExpensesRouteRoute._addFileChildren(
-    AuthenticatedExpensesRouteRouteChildren,
-  )
 
 interface AuthenticatedGamesRouteRouteChildren {
   AuthenticatedGamesRouletteRoute: typeof AuthenticatedGamesRouletteRoute
@@ -320,13 +222,11 @@ const AuthenticatedGamesRouteRouteWithChildren =
   )
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedExpensesRouteRoute: typeof AuthenticatedExpensesRouteRouteWithChildren
   AuthenticatedGamesRouteRoute: typeof AuthenticatedGamesRouteRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedExpensesRouteRoute: AuthenticatedExpensesRouteRouteWithChildren,
   AuthenticatedGamesRouteRoute: AuthenticatedGamesRouteRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
 }
