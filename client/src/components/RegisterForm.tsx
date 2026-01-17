@@ -158,9 +158,9 @@ export default function RegisterForm() {
                                     },
                                     onSuccess: async () => {
                                         await refreshSession();
-                                        navigate({ to: "/expenses/list" });
+                                        navigate({ to: "/games" });
                                         throw redirect({
-                                            to: "/expenses/list",
+                                            to: "/games",
                                         });
                                     },
                                 },

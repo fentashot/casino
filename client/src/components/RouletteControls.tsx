@@ -52,10 +52,6 @@ function formatValue(value: number): string {
   return value.toString();
 }
 
-// function formatBalance(value: number): string {
-//   return value.toLocaleString().replace(/,/g, '.');
-// }
-
 function getKeyFromSelection(selection: RouletteSelection): BetKey {
   switch (selection.type) {
     case 'straight':
