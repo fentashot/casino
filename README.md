@@ -1,394 +1,901 @@
-# Expense Tracker
+# 🎰 Casino Roulette
 
-An expense management application with a built-in casino system (roulette). The project uses a monorepo architecture with a Hono/Bun backend and React/Vite frontend.
+> Nowoczesna aplikacja kasyna online z weryfikowalnym systemem Provably Fair, zbudowana na bazie Bun, Hono i React.
 
-## 📋 Table of Contents
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Bun](https://img.shields.io/badge/Bun-1.x-black?logo=bun)](https://bun.sh)
+[![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)](https://react.dev)
+[![Hono](https://img.shields.io/badge/Hono-4.10-E36002?logo=hono)](https://hono.dev)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql)](https://www.postgresql.org/)
 
-- [Features](#-features)
-- [Tech Stack](#-tech-stack)
-- [Requirements](#-requirements)
-- [Installation](#-installation)
-- [Configuration](#-configuration)
-- [Running the Application](#-running-the-application)
-- [Project Structure](#-project-structure)
-- [API Endpoints](#-api-endpoints)
-- [Database](#-database)
-- [Additional Documentation](#-additional-documentation)
+## 📋 Spis Treści
 
-## ✨ Features
+- [Opis Projektu](#-opis-projektu)
+- [Stack Technologiczny](#-stack-technologiczny)
+- [Główne Funkcjonalności](#-główne-funkcjonalności)
+- [Architektura](#-architektura)
+- [Instalacja i Uruchomienie](#-instalacja-i-uruchomienie)
+- [Konfiguracja](#-konfiguracja)
+- [Dokumentacja API](#-dokumentacja-api)
+- [Schemat Bazy Danych](#-schemat-bazy-danych)
+- [System Provably Fair](#-system-provably-fair)
+- [Docker](#-docker)
+- [Rozwój i Testing](#-rozwój-i-testing)
 
-### Expense Management
+---
 
-- ✅ Create, view, and delete expenses
-- ✅ Track total expense amount
-- ✅ Associate expenses with users
-- ✅ Expense history with dates
+## 🎯 Opis Projektu
 
-### Casino System (Roulette)
+**Casino Roulette** to pełnoprawna aplikacja kasyna online z implementacją gry w ruletkę europejską (37 pól: 0-36). Projekt wyróżnia się:
 
-- ✅ Roulette game with provably fair system
-- ✅ Multiple bet types (color, number, even/odd)
-- ✅ User balance system
-- ✅ Game fairness verification (HMAC)
-- ✅ Spin and bet history
+- **Systemem Provably Fair** - każdy spin jest kryptograficznie weryfikowalny przez gracza
+- **Zaawansowaną warstwą interaktywną** - unikalna siatka CSS Grid obsługująca wszystkie typy zakładów (inside/outside)
+- **Real-time animacjami** - płynna symulacja fizyki koła ruletki z dźwiękami
+- **Systemem autentykacji** - Better Auth z obsługą GitHub OAuth i email/password
+- **Rate limiting** - zabezpieczenie przed nadużyciami (100 req/min API, 30 spinów/min)
+- **Idempotency** - wielokrotne wysłanie tego samego żądania nie powoduje duplikacji
 
-### Authentication
+---
 
-- ✅ Registration and login (email/password)
-- ✅ OAuth with GitHub
-- ✅ User sessions
-- ✅ Protected API routes
-
-## 🛠 Tech Stack
-
-### Backend
-
-- **Runtime**: [Bun](https://bun.sh/) - Fast JavaScript runtime
-- **Framework**: [Hono](https://hono.dev/) - Lightweight web framework
-- **Database**: [Turso](https://turso.tech/) (LibSQL/SQLite)
-- **ORM**: [Drizzle ORM](https://orm.drizzle.team/)
-- **Authentication**: [Better Auth](https://www.better-auth.com/)
-- **Validation**: Zod
+## 🛠 Stack Technologiczny
 
 ### Frontend
 
-- **Framework**: React 18
-- **Build Tool**: Vite
-- **Router**: TanStack Router
-- **Data Fetching**: TanStack Query
-- **Forms**: TanStack Form
-- **Styling**: Tailwind CSS
-- **UI Components**: Radix UI + shadcn/ui
-- **Animations**: Framer Motion
+| Technologia         | Wersja | Opis                                         |
+| ------------------- | ------ | -------------------------------------------- |
+| **React**           | 18.3   | Biblioteka UI z hooks i concurrent rendering |
+| **TypeScript**      | 5.6    | Statyczne typowanie dla bezpieczeństwa kodu  |
+| **Vite**            | 7.1    | Ultraszybki bundler z HMR                    |
+| **TanStack Router** | 1.133  | Type-safe routing z lazy loading             |
+| **TanStack Query**  | 5.90   | Server state management z caching            |
+| **Tailwind CSS**    | 3.4    | Utility-first CSS framework                  |
+| **Framer Motion**   | 12.23  | Zaawansowane animacje i transitions          |
+| **Radix UI**        | latest | Headless UI components (Toast, Label, Slot)  |
+| **Lucide React**    | 0.469  | Biblioteka ikon                              |
+| **Canvas Confetti** | 1.9    | Efekty wizualne wygranej                     |
+| **Sonner**          | 2.0    | Toast notifications                          |
+| **Zod**             | 3.25   | Runtime schema validation                    |
+| **Better Auth**     | 1.3    | Client-side auth SDK                         |
 
-### DevOps
+### Backend
 
-- **Containerization**: Docker
-- **SSL/TLS**: Self-signed certificates (development)
+| Technologia           | Wersja | Opis                                   |
+| --------------------- | ------ | -------------------------------------- |
+| **Bun**               | 1.x    | Szybki runtime JavaScript/TypeScript   |
+| **Hono**              | 4.10   | Ultraszybki web framework (Edge-ready) |
+| **PostgreSQL**        | 16+    | Relacyjna baza danych                  |
+| **Drizzle ORM**       | 0.45   | TypeScript-first ORM z migracje        |
+| **Better Auth**       | 1.3    | Kompleksowy system autentykacji        |
+| **Zod**               | 3.25   | Schema validation dla API              |
+| **Hono Rate Limiter** | 0.5    | Middleware do rate limiting            |
 
-## 📦 Requirements
+### Tooling & DevOps
 
-- **Bun** >= 1.0.0 (or Node.js >= 18.0.0)
-- **Docker** (optional)
-- **Turso CLI** (for database management)
+| Narzędzie        | Opis                                          |
+| ---------------- | --------------------------------------------- |
+| **ESLint**       | Linting z konfiguracją dla React i TypeScript |
+| **Drizzle Kit**  | CLI do zarządzania migracjami bazy danych     |
+| **Concurrently** | Równoczesne uruchamianie frontend/backend     |
+| **Docker**       | Konteneryzacja aplikacji                      |
+| **TSX**          | TypeScript execution dla Node.js              |
 
-## 🚀 Installation
+---
 
-### 1. Clone the repository
+## ✨ Główne Funkcjonalności
 
-```bash
-git clone https://github.com/fentashot/expense-tracker.git
-cd expense-tracker
+### 🎲 System Zakładów
+
+#### Inside Bets (zakłady wewnętrzne)
+
+- **Straight Up** (1 numer) - 35:1 - bezpośrednie kliknięcie na numer
+- **Split** (2 numery) - 17:1 - kliknięcie na linię między numerami
+- **Street** (3 numery) - 11:1 - kliknięcie na dolną krawędź kolumny
+- **Corner** (4 numery) - 8:1 - kliknięcie na skrzyżowanie czterech pól
+- **Line/Six-line** (6 numerów) - 5:1 - kliknięcie między dwoma streetami
+
+#### Outside Bets (zakłady zewnętrzne)
+
+- **Red/Black** - 1:1 - kolor numeru
+- **Even/Odd** - 1:1 - parzystość numeru (0 nie wygrywa)
+- **High/Low** - 1:1 - 1-18 lub 19-36
+- **Dozens** - 2:1 - 1-12, 13-24, 25-36
+- **Columns** - 2:1 - jedna z trzech kolumn pionowych
+
+### 🎨 Zaawansowana Warstwa Interaktywna
+
+**RouletteInteractionLayer** - innowacyjny komponent oparty na CSS Grid:
+
+- **Siatka 25×7** - precyzyjnie pokrywa cały stół (12 kolumn × 3 rzędy + linie)
+- **Matematyczna kalkulacja** - automatyczne wykrywanie typu zakładu na podstawie współrzędnych
+- **Hover preview** - podświetlanie wszystkich pól objętych zakładem
+- **Multi-button support** - lewy przycisk (dodaj), prawy (usuń), środkowy (usuń wszystko)
+- **Debug mode** - kolorowe strefy dla deweloperów
+
+### 🔐 System Provably Fair
+
+Każdy spin jest weryfikowalny kryptograficznie:
+
+```typescript
+HMAC = SHA256(serverSeed, `${clientSeed}:${nonce}`);
+result = parseInt(HMAC.substring(0, 8), 16) % 37;
 ```
 
-### 2. Install dependencies
+**Komponenty:**
 
-```bash
-# Root dependencies (backend)
-bun install
+- **Server Seed** - losowy hex generowany przez serwer, hashowany SHA-256
+- **Client Seed** - generowany przez klienta przed każdym spinem
+- **Nonce** - auto-inkrementowany licznik dla unikalności
+- **HMAC** - kryptograficzny dowód uczciwości
 
-# Client dependencies (frontend)
-cd client
-bun install
-cd ..
+**Weryfikacja:**
+
+1. Gracz widzi hash server seed przed spinem
+2. Po spinie otrzymuje HMAC i wszystkie parametry
+3. Może zweryfikować wynik lokalnie
+4. Admin może ujawnić server seed po rotacji
+
+### 🎡 Fizyka i Animacje
+
+- **Realistyczna symulacja** - koło obraca się zawsze w tym samym kierunku z easing curve
+- **Dźwięki tick-tick** - audio feedback podczas wirowania (Web Audio API)
+- **Smooth animations** - Framer Motion dla płynnych przejść
+- **Konfetti** - efekt wizualny przy wygranej (Canvas Confetti)
+- **Responsive design** - działa na wszystkich urządzeniach
+
+### 💰 System Portfela
+
+- **Real-time balance** - TanStack Query z automatycznym cache
+- **Transaction history** - pełna historia spinów i zakładów
+- **Initial balance** - 100,000 zł na start dla nowych użytkowników
+- **Atomic updates** - Drizzle ORM transactions dla consistency
+
+### 🔒 Bezpieczeństwo
+
+- **Rate Limiting** - 100 req/min dla API, 30 spinów/min dla /spin
+- **Secure Headers** - XSS, clickjacking protection (Hono middleware)
+- **Session Management** - Better Auth z token rotation
+- **Idempotency Keys** - zapobieganie duplikacji spinów
+- **Input Validation** - Zod schemas na frontend i backend
+- **CORS Protection** - konfiguracja dla production
+- **SQL Injection Protection** - Drizzle ORM prepared statements
+
+---
+
+## 🏗 Architektura
+
+### Komunikacja Frontend ↔ Backend
+
+Projekt wykorzystuje **RPC-style API** z Hono:
+
+```typescript
+// Backend (Hono)
+const app = new Hono()
+  .get("/balance", async (c) => {
+    /* ... */
+  })
+  .post("/spin", zValidator("json", spinRequestSchema), async (c) => {
+    /* ... */
+  });
+
+// Frontend (Hono Client)
+import { hc } from "hono/client";
+const client = hc<typeof app>("http://localhost:3000/api");
+const res = await client.casino.balance.$get();
 ```
 
-## ⚙️ Configuration
+**Zalety:**
 
-### 1. Environment variables
+- ✅ Type-safety end-to-end (typy dzielone między frontend/backend)
+- ✅ Autocomplete w IDE dla wszystkich endpointów
+- ✅ Brak potrzeby code generation (jak tRPC)
+- ✅ Walidacja runtime z Zod na obu stronach
 
-Create a `.env` file in the root directory:
-
-```env
-# Database (Turso)
-TURSO_DATABASE_URL=libsql://your-database-url.turso.io
-TURSO_AUTH_TOKEN=your-auth-token
-
-# Better Auth
-BETTER_AUTH_SECRET=your-secret-key-min-32-chars
-BETTER_AUTH_URL=http://localhost:2137
-
-# GitHub OAuth (optional)
-GITHUB_CLIENT_ID=your-github-client-id
-GITHUB_CLIENT_SECRET=your-github-client-secret
-
-# Admin Key (for casino operations)
-ADMIN_KEY=your-admin-key
-
-# Server Configuration
-PORT=2137
-USE_SSL=false
-```
-
-### 2. Turso database configuration
-
-```bash
-# Install Turso CLI
-curl -sSfL https://get.tur.so/install.sh | bash
-
-# Login to Turso
-turso auth login
-
-# Create a new database
-turso db create expense-tracker
-
-# Get connection string
-turso db show expense-tracker --url
-
-# Create auth token
-turso db tokens create expense-tracker
-```
-
-### 3. Database migrations
-
-```bash
-# Generate migrations
-bun run db:gen
-
-# Apply migrations
-bun run db:push
-```
-
-### 4. SSL certificates (optional)
-
-```bash
-# Generate self-signed certificates
-bun run cert:gen
-```
-
-## 🏃 Running the Application
-
-### Development (local)
-
-```bash
-# Terminal 1 - Backend
-bun run dev
-
-# Terminal 2 - Frontend
-cd client
-bun run dev
-```
-
-- Backend: http://localhost:2137
-- Frontend: http://localhost:3000
-
-### Development (Docker)
-
-```bash
-# Build and run
-docker compose up --build
-
-# Or use scripts
-bun run d:build
-bun run d:run
-```
-
-### Production
-
-```bash
-# Build backend
-bun run build
-
-# Build frontend
-cd client
-bun run build
-cd ..
-
-# Start production server
-bun run start
-```
-
-## 📁 Project Structure
+### Struktura Katalogów
 
 ```
 expense-tracker/
-├── src/                      # Backend (Hono server)
-│   ├── index.ts             # Main server file
+├── src/                      # Backend (Hono + Bun)
+│   ├── index.ts             # Entry point, middleware setup
 │   ├── auth.ts              # Better Auth configuration
-│   ├── types.ts             # TypeScript types
+│   ├── types.ts             # Shared TypeScript types
 │   ├── zodTypes.ts          # Zod validation schemas
 │   ├── db/
-│   │   ├── schema.ts        # Database schema (Drizzle)
-│   │   └── turso.ts         # Turso DB configuration
-│   ├── routes/
-│   │   ├── expenses.ts      # Expense endpoints
-│   │   └── casino.ts        # Casino endpoints
-│   └── lib/
-│       └── casinoHelpers.ts # Casino helper functions
-├── client/                   # Frontend (React/Vite)
+│   │   ├── schema.ts        # Drizzle ORM schema
+│   │   └── postgres.ts      # Database connection
+│   ├── lib/
+│   │   ├── casinoHelpers.ts # Legacy bridge
+│   │   └── roulette/        # Roulette engine (Provably Fair)
+│   │       ├── engine.ts    # Core logic
+│   │       ├── constants.ts # Payout tables, wheel sequence
+│   │       ├── types.ts     # TypeScript types
+│   │       └── utils.ts     # Helper functions
+│   └── routes/
+│       ├── casino.ts        # Casino API endpoints
+│       └── expenses.ts      # Expenses CRUD (legacy)
+│
+├── client/                   # Frontend (React + Vite)
 │   ├── src/
 │   │   ├── main.tsx         # Entry point
-│   │   ├── auth-context.tsx # Authentication context
-│   │   ├── components/      # React components
-│   │   ├── routes/          # Route definitions
-│   │   └── lib/
-│   │       ├── api.ts       # API client (Hono RPC)
-│   │       ├── auth-client.ts # Better Auth client
-│   │       └── utils.ts     # Utility functions
-│   ├── public/              # Static files
-│   └── dist/                # Build output
-├── drizzle/                  # Database migrations
-├── certs/                    # SSL certificates
-├── Dockerfile               # Multi-stage Docker build
-├── docker-compose.yml       # Docker Compose config
-├── drizzle.config.ts        # Drizzle configuration
-└── package.json             # Root dependencies
-
+│   │   ├── auth-context.tsx # Auth state management
+│   │   ├── components/
+│   │   │   ├── RouletteWheel.tsx          # Animated wheel
+│   │   │   ├── RouletteControls.tsx       # Betting table + overlay
+│   │   │   ├── RouletteInteractionLayer.tsx # Inside bets grid
+│   │   │   ├── RouletteBettingBoard.tsx   # Standalone board
+│   │   │   ├── RouletteResult.tsx         # Result display
+│   │   │   ├── SpinHistory.tsx            # Last spins
+│   │   │   ├── ProvablyFairInfo.tsx       # Verification panel
+│   │   │   ├── BalanceDisplay.tsx         # Wallet component
+│   │   │   └── ui/                        # Radix UI components
+│   │   ├── hooks/
+│   │   │   ├── useCasinoGame.ts          # Main game logic
+│   │   │   └── use-toast.ts              # Toast notifications
+│   │   ├── lib/
+│   │   │   ├── api.ts                    # Hono client setup
+│   │   │   ├── bettingGrid.ts            # Grid calculation logic
+│   │   │   ├── rouletteHelpers.ts        # Bet formatting helpers
+│   │   │   └── roulette/                 # Client-side roulette utils
+│   │   └── routes/
+│   │       └── _authenticated/games/roulette.tsx
+│   └── public/
+│
+├── drizzle/                 # Database migrations
+├── docs/
+│   └── API.md              # Kompletna dokumentacja API
+├── .env.example            # Environment variables template
+├── drizzle.config.ts       # Drizzle ORM config
+├── Dockerfile              # Production container
+└── package.json            # Root scripts (dev, build, docker)
 ```
 
-## 🔌 API Endpoints
+---
 
-### Authentication
+## 🚀 Instalacja i Uruchomienie
 
-```
-POST   /api/auth/sign-up/email          # Sign up
-POST   /api/auth/sign-in/email          # Sign in
-POST   /api/auth/sign-out               # Sign out
-GET    /api/auth/session                # Get session
-GET    /api/auth/github                 # GitHub OAuth
-```
+### Wymagania
 
-### Expenses (requires authentication)
+- **Bun** >= 1.0.0 ([instalacja](https://bun.sh))
+- **PostgreSQL** >= 16 (lokalnie lub Docker)
+- **Node.js** >= 18 (opcjonalnie, Bun jest preferowany)
 
-```
-GET    /api/expenses                    # List user's expenses
-POST   /api/expenses                    # Create expense
-DELETE /api/expenses/:id                # Delete expense
-GET    /api/expenses/total              # Total expenses
-```
-
-### Casino (requires authentication)
-
-```
-GET    /api/casino/seed                 # Get server seed hash
-POST   /api/casino/rotate               # Rotate server seed (admin)
-GET    /api/casino/balance              # User balance
-POST   /api/casino/spin                 # Execute spin
-POST   /api/casino/reveal               # Reveal server seed (admin)
-GET    /api/casino/spins                # Spin history
-GET    /api/casino/bets                 # Bet history
-```
-
-## 🗄 Database
-
-### Table Schema
-
-#### `expense_table`
-
-- `id` - Primary key (auto-increment)
-- `userId` - User ID
-- `title` - Expense title
-- `amount` - Amount (numeric)
-- `date` - Expense date
-- `createdAt` - Creation date
-
-#### `user`
-
-- `id` - Primary key
-- `name` - User name
-- `email` - Email (unique)
-- `emailVerified` - Email verified status
-- `image` - Avatar URL
-- `createdAt` - Creation date
-- `updatedAt` - Update date
-
-#### `session`
-
-- `id` - Primary key
-- `token` - Session token (unique)
-- `userId` - Foreign key to user
-- `expiresAt` - Expiration date
-- `ipAddress` - User IP
-- `userAgent` - User agent
-
-#### `casinoServerSeed`
-
-- `id` - Primary key
-- `seed` - Server seed
-- `hash` - SHA-256 hash of seed
-- `active` - Active status
-- `createdAt` - Creation date
-
-#### `casinoSpin`
-
-- `id` - Primary key
-- `userId` - User ID
-- `clientSeed` - Client seed
-- `nonce` - Sequential number
-- `serverSeedId` - Server seed ID
-- `result` - Result (0-36)
-- `timestamp` - Spin timestamp
-
-#### `casinoBet`
-
-- `id` - Primary key
-- `userId` - User ID
-- `spinId` - Spin ID
-- `betType` - Bet type
-- `choice` - Choice
-- `amount` - Bet amount
-- `won` - Win status
-- `winnings` - Winnings amount
-
-#### `userBalance`
-
-- `userId` - Primary key
-- `balance` - Balance (numeric)
-- `lastNonce` - Last used nonce
-
-## 📚 Additional Documentation
-
-- [DOCKER.md](./DOCKER.md) - Detailed Docker and deployment documentation
-- [API.md](./docs/API.md) - Complete API documentation
-- [CASINO.md](./docs/CASINO.md) - Casino system documentation
-- [ARCHITECTURE.md](./docs/ARCHITECTURE.md) - Application architecture
-
-## 🧪 Testing
+### Krok 1: Klonowanie Repozytorium
 
 ```bash
-# Backend tests (TODO)
-bun test
+git clone https://github.com/fentashot/casino.git
+cd casino
+```
 
-# Frontend tests (TODO)
+### Krok 2: Instalacja Zależności
+
+```bash
+# Root (backend)
+bun install
+
+# Frontend
 cd client
-bun test
+bun install
+cd ..
 ```
 
-## 🔧 Available Scripts
+### Krok 3: Konfiguracja Bazy Danych
 
-### Backend (root)
+#### Opcja A: Lokalny PostgreSQL
 
 ```bash
-bun run dev          # Run dev server with hot reload
-bun run build        # Build for production
-bun run start        # Run production server
-bun run db:gen       # Generate Drizzle migrations
-bun run db:push      # Apply migrations to database
-bun run cert:gen     # Generate SSL certificates
+# Utwórz bazę danych
+psql -U postgres
+CREATE DATABASE casino;
+\q
 ```
 
-### Frontend (client/)
+#### Opcja B: Docker PostgreSQL
 
 ```bash
-bun run dev          # Run Vite dev server
-bun run build        # Build for production
-bun run preview      # Preview production build
-bun run lint         # Run ESLint
+docker run --name casino-postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=casino \
+  -p 5432:5432 \
+  -d postgres:16
 ```
 
-### Docker
+### Krok 4: Konfiguracja Zmiennych Środowiskowych
 
 ```bash
-bun run d:build      # Build Docker image
-bun run d:run        # Run container
-bun run d:runp       # Run with public access
-bun run d:dev        # Build + run in one command
+cp .env.example .env
 ```
 
-## 📝 License
+Edytuj `.env` (patrz [Konfiguracja](#-konfiguracja))
 
-MIT
+### Krok 5: Migracje Bazy Danych
 
-## 👥 Authors
+```bash
+# Generuj migracje (jeśli zmieniłeś schema)
+bun run db:gen
 
-- [fentashot](https://github.com/fentashot)
+# Aplikuj migracje
+bun run db:push
+```
+
+### Krok 6: Inicjalizacja Server Seed (pierwsza konfiguracja)
+
+```bash
+# Uruchom backend
+bun run dev:server
+
+# W osobnym terminalu, zainicjuj pierwszy server seed (POST /api/casino/rotate)
+curl -X POST http://localhost:3000/api/casino/rotate \
+  -H "Content-Type: application/json" \
+  -b "better-auth.session_token=<ADMIN_TOKEN>"
+```
+
+> **Uwaga:** Potrzebujesz konta administratora. Pierwszy użytkownik może być ręcznie ustawiony jako admin w bazie:
+>
+> ```sql
+> UPDATE "user" SET role = 'admin' WHERE email = 'twoj@email.com';
+> ```
+
+### Krok 7: Uruchomienie Development
+
+```bash
+# Root directory - uruchamia backend + frontend jednocześnie
+bun run dev
+```
+
+**Aplikacja dostępna pod:**
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3000/api
+- TanStack Router DevTools: http://localhost:3000/**devtools**
+- TanStack Query DevTools: wbudowane w aplikację
+
+### Krok 8: Build Production
+
+```bash
+# Backend
+bun run build
+
+# Frontend
+cd client
+bun run build
+cd ..
+
+# Uruchom production build
+bun run start
+```
+
+---
+
+## ⚙️ Konfiguracja
+
+### Zmienne Środowiskowe (`.env`)
+
+```bash
+# ============ Database ============
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/casino
+
+# ============ GitHub OAuth (opcjonalne) ============
+# Uzyskaj z https://github.com/settings/developers
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+
+# ============ Better Auth ============
+# Generuj: openssl rand -hex 32
+BETTER_AUTH_SECRET=your_random_secret_min_32_chars
+BETTER_AUTH_URL=http://localhost:3000
+
+# ============ Server (opcjonalne) ============
+PORT=3000  # default: 3000
+```
+
+### Drizzle Config (`drizzle.config.ts`)
+
+```typescript
+export default {
+  schema: "./src/db/schema.ts",
+  out: "./drizzle",
+  dialect: "postgresql",
+  dbCredentials: {
+    url: process.env.DATABASE_URL!,
+  },
+};
+```
+
+### Tailwind Config
+
+TailwindCSS skonfigurowany z:
+
+- **Animacje** - `tailwindcss-animate`
+- **Custom kolory** - green/red/black cells dla ruletki
+- **CSS Variables** - zgodność z Radix UI
+
+---
+
+## 📚 Dokumentacja API
+
+> Pełna dokumentacja dostępna w [docs/API.md](docs/API.md)
+
+### Główne Endpointy
+
+#### **Autentykacja** (Better Auth)
+
+| Method | Endpoint                    | Opis                       | Auth |
+| ------ | --------------------------- | -------------------------- | ---- |
+| `POST` | `/api/auth/sign-up/email`   | Rejestracja email/password | ❌   |
+| `POST` | `/api/auth/sign-in/email`   | Logowanie email/password   | ❌   |
+| `POST` | `/api/auth/sign-out`        | Wylogowanie                | ✅   |
+| `GET`  | `/api/auth/session`         | Pobierz aktualną sesję     | ✅   |
+| `GET`  | `/api/auth/callback/github` | GitHub OAuth callback      | ❌   |
+
+#### **Casino**
+
+| Method | Endpoint                  | Opis                               | Auth | Rate Limit |
+| ------ | ------------------------- | ---------------------------------- | ---- | ---------- |
+| `GET`  | `/api/casino/balance`     | Pobierz saldo użytkownika          | ✅   | 100/min    |
+| `GET`  | `/api/casino/seed`        | Pobierz hash aktywnego server seed | ✅   | 100/min    |
+| `GET`  | `/api/casino/nonce`       | Pobierz następny nonce             | ✅   | 100/min    |
+| `POST` | `/api/casino/spin`        | Wykonaj spin ruletki               | ✅   | **30/min** |
+| `POST` | `/api/casino/rotate`      | Rotuj server seed (admin)          | ✅🔑 | 100/min    |
+| `POST` | `/api/casino/reveal`      | Ujawnij nieaktywny seed (admin)    | ✅🔑 | 100/min    |
+| `GET`  | `/api/casino/history`     | Historia spinów                    | ✅   | 100/min    |
+| `GET`  | `/api/casino/history/:id` | Szczegóły spinu                    | ✅   | 100/min    |
+| `POST` | `/api/casino/admin/seed`  | Załaduj nowy seed (admin)          | ✅🔑 | 100/min    |
+
+**Legenda:** ✅ = wymagana autentykacja, 🔑 = tylko admin
+
+### Przykład: POST /api/casino/spin
+
+**Request:**
+
+```json
+{
+  "bets": [
+    {
+      "type": "straight",
+      "numbers": [17],
+      "amount": 100,
+      "color": null,
+      "choice": null
+    },
+    {
+      "type": "red_black",
+      "numbers": [],
+      "amount": 50,
+      "color": "red",
+      "choice": null
+    }
+  ],
+  "clientSeed": "a1b2c3d4e5f6...",
+  "nonce": 42,
+  "idempotencyKey": "uuid-v4-string" // opcjonalne
+}
+```
+
+**Response:**
+
+```json
+{
+  "result": {
+    "number": 17,
+    "color": "black"
+  },
+  "totalBet": 150,
+  "totalWin": 3500,
+  "newBalance": 103350,
+  "provablyFair": {
+    "clientSeed": "a1b2c3d4e5f6...",
+    "serverSeedHash": "sha256-hash...",
+    "nonce": 42,
+    "hmac": "hmac-sha256..."
+  }
+}
+```
+
+### Walidacja Zod
+
+Wszystkie endpointy API używają Zod schemas:
+
+```typescript
+// src/zodTypes.ts
+export const betSchema = z.object({
+  type: z.enum(['straight', 'split', 'street', 'corner', 'line',
+                'column', 'dozen', 'even_odd', 'red_black', 'high_low']),
+  numbers: z.array(z.number().int().min(0).max(36)),
+  amount: z.number().int().positive(),
+  color: z.enum(['red', 'black']).optional(),
+  choice: z.union([...]).optional(),
+});
+
+export const spinRequestSchema = z.object({
+  bets: z.array(betSchema),
+  clientSeed: z.string().min(1),
+  nonce: z.number().int().nonnegative(),
+  idempotencyKey: z.string().min(16).max(64).optional(),
+});
+```
+
+---
+
+## 🗄 Schemat Bazy Danych
+
+### Diagram ERD
+
+```
+┌──────────────┐       ┌─────────────────┐       ┌──────────────────┐
+│     user     │───┬───│  user_balance   │       │ casino_spin      │
+├──────────────┤   │   ├─────────────────┤   ┌───├──────────────────┤
+│ id (PK)      │   │   │ userId (PK, FK) │   │   │ id (PK)          │
+│ name         │   │   │ balance         │   │   │ userId (FK)      │
+│ email        │   │   │ lastNonce       │   │   │ serverSeedId (FK)│
+│ role         │   │   │ updatedAt       │   │   │ clientSeed       │
+│ createdAt    │   │   └─────────────────┘   │   │ nonce            │
+└──────────────┘   │                         │   │ hmac             │
+       │           │   ┌─────────────────┐   │   │ number           │
+       │           └───│    session      │   │   │ color            │
+       │               ├─────────────────┤   │   │ totalBet         │
+       │               │ id (PK)         │   │   │ totalWin         │
+       │               │ userId (FK)     │   │   │ idempotencyKey   │
+       │               │ token           │   │   │ createdAt        │
+       │               │ expiresAt       │   │   └──────────────────┘
+       │               └─────────────────┘   │            │
+       │                                     │            │
+       │   ┌─────────────────────────┐      │   ┌────────┴────────┐
+       └───│    expense_table        │      │   │  casino_bet     │
+           ├─────────────────────────┤      │   ├─────────────────┤
+           │ id (PK)                 │      └───│ id (PK)         │
+           │ userId (FK)             │          │ spinId (FK)     │
+           │ title                   │          │ type            │
+           │ amount                  │          │ numbers (JSON)  │
+           │ date                    │          │ amount          │
+           └─────────────────────────┘          │ win             │
+                                                └─────────────────┘
+           ┌──────────────────────┐
+           │ casino_server_seed   │
+           ├──────────────────────┤
+           │ id (PK)              │
+           │ seed                 │
+           │ hash                 │
+           │ active               │
+           │ createdAt            │
+           │ revealedAt           │
+           └──────────────────────┘
+```
+
+### Kluczowe Tabele
+
+#### **user** - Użytkownicy (Better Auth)
+
+```sql
+CREATE TABLE "user" (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  email_verified BOOLEAN DEFAULT false,
+  image TEXT,
+  role TEXT DEFAULT 'user', -- 'user' | 'admin'
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### **user_balance** - Portfele użytkowników
+
+```sql
+CREATE TABLE user_balance (
+  user_id TEXT PRIMARY KEY REFERENCES "user"(id) ON DELETE CASCADE,
+  balance NUMERIC NOT NULL DEFAULT 0,
+  last_nonce INTEGER NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### **casino_server_seed** - Server Seeds (Provably Fair)
+
+```sql
+CREATE TABLE casino_server_seed (
+  id TEXT PRIMARY KEY,
+  seed TEXT NOT NULL,           -- Sekret, ujawniany po rotacji
+  hash TEXT NOT NULL,            -- SHA-256(seed), widoczny dla graczy
+  active BOOLEAN DEFAULT true,   -- Tylko jeden może być aktywny
+  created_at TIMESTAMP DEFAULT NOW(),
+  revealed_at TIMESTAMP          -- Czas ujawnienia
+);
+```
+
+#### **casino_spin** - Historia Spinów
+
+```sql
+CREATE TABLE casino_spin (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES "user"(id) ON DELETE CASCADE,
+  server_seed_id TEXT REFERENCES casino_server_seed(id),
+  client_seed TEXT NOT NULL,
+  nonce INTEGER NOT NULL,
+  hmac TEXT NOT NULL,            -- HMAC-SHA256 dla weryfikacji
+  number INTEGER NOT NULL,       -- 0-36
+  color TEXT NOT NULL,           -- 'red' | 'black' | 'green'
+  total_bet NUMERIC NOT NULL,
+  total_win NUMERIC NOT NULL,
+  idempotency_key TEXT UNIQUE,   -- Zapobiega duplikacji
+  created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX spin_user_id_idx ON casino_spin(user_id);
+CREATE INDEX spin_idempotency_key_idx ON casino_spin(idempotency_key);
+```
+
+#### **casino_bet** - Szczegóły Zakładów
+
+```sql
+CREATE TABLE casino_bet (
+  id TEXT PRIMARY KEY,
+  spin_id TEXT REFERENCES casino_spin(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,            -- 'straight', 'split', etc.
+  numbers TEXT NOT NULL,         -- JSON array [1,2,3]
+  amount NUMERIC NOT NULL,
+  color TEXT,                    -- dla red/black
+  choice TEXT,                   -- dla dozen/column/etc.
+  win NUMERIC NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX bet_spin_id_idx ON casino_bet(spin_id);
+```
+
+### Migracje
+
+Zarządzane przez **Drizzle Kit**:
+
+```bash
+# Generuj nową migrację po zmianie schema.ts
+bun run db:gen
+
+# Aplikuj migracje do bazy
+bun run db:push
+
+# Sprawdź status migracji
+bun run drizzle-kit studio
+```
+
+---
+
+## 🔐 System Provably Fair
+
+### Jak to Działa?
+
+#### 1. Inicjalizacja Server Seed
+
+```typescript
+// Backend: Generowanie nowego seed
+const serverSeed = crypto.randomBytes(32).toString("hex");
+const serverSeedHash = crypto
+  .createHash("sha256")
+  .update(serverSeed)
+  .digest("hex");
+
+// Zapisz w bazie
+await db.insert(casinoServerSeed).values({
+  seed: serverSeed, // SEKRET, nie ujawniaj graczom
+  hash: serverSeedHash, // PUBLICZNY, pokazuj przed spinem
+  active: true,
+});
+```
+
+#### 2. Gracz Generuje Client Seed
+
+```typescript
+// Frontend: Przed każdym spinem
+const clientSeed = crypto.randomUUID(); // lub dowolny string
+const nonce = lastNonce + 1; // auto-inkrement
+```
+
+#### 3. Obliczanie Wyniku
+
+```typescript
+// Backend: Spin
+const hmac = crypto
+  .createHmac("sha256", Buffer.from(serverSeed, "hex"))
+  .update(`${clientSeed}:${nonce}`)
+  .digest("hex");
+
+const number = parseInt(hmac.substring(0, 8), 16) % 37;
+// 0-36 (European Roulette)
+```
+
+#### 4. Weryfikacja przez Gracza
+
+Po rotacji server seed, gracz może zweryfikować wszystkie poprzednie spiny:
+
+```javascript
+// Pobierz ujawniony server seed
+const revealedSeed = "abc123..."; // z /api/casino/reveal
+
+// Dla każdego spinu
+spins.forEach((spin) => {
+  const hmac = crypto
+    .createHmac("sha256", Buffer.from(revealedSeed, "hex"))
+    .update(`${spin.clientSeed}:${spin.nonce}`)
+    .digest("hex");
+
+  const calculatedNumber = parseInt(hmac.substring(0, 8), 16) % 37;
+
+  console.log(
+    `Spin ${spin.id}: ${calculatedNumber === spin.number ? "✅ OK" : "❌ FAIL"}`,
+  );
+});
+```
+
+### Komponenty UI
+
+**ProvablyFairInfo.tsx** - Panel weryfikacji:
+
+- Wyświetla server seed hash przed spinem
+- Pokazuje HMAC po spinie
+- Link do zewnętrznego verifier'a
+- Tutorial jak zweryfikować
+
+**AdminSeedPanel.tsx** - Panel admina:
+
+- Rotacja server seed
+- Ujawnienie nieaktywnych seedów
+- Historia seedów
+
+---
+
+## 🐳 Docker
+
+### Build i Uruchomienie
+
+```bash
+# Build image
+bun run d:build
+
+# Uruchom kontener (produkcja)
+bun run d:runp
+
+# Uruchom kontener (dev z hotreload)
+bun run d:dev
+```
+
+### Dockerfile
+
+```dockerfile
+FROM oven/bun:1
+
+WORKDIR /app
+
+# Dependencies
+COPY package.json bun.lock ./
+COPY client/package.json client/bun.lock ./client/
+RUN bun install
+
+# Copy source
+COPY . .
+
+# Build frontend
+RUN cd client && bun run build
+
+# Build backend
+RUN bun run build
+
+EXPOSE 3000
+
+CMD ["bun", "run", "start"]
+```
+
+### Docker Compose (opcjonalnie)
+
+```yaml
+version: "3.8"
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: casino
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:
+```
+
+---
+
+## 🧪 Rozwój i Testing
+
+### Skrypty NPM/Bun
+
+```json
+{
+  "scripts": {
+    "dev": "concurrently -n api,web \"bun run dev:server\" \"bun run dev:client\"",
+    "dev:server": "bun --bun run --hot src/index.ts",
+    "dev:client": "bun run --cwd client dev",
+    "build": "bun build src/index.ts --outdir dist",
+    "start": "bun run dist/index.js",
+    "db:gen": "bun run drizzle-kit generate",
+    "db:push": "bun run drizzle-kit push",
+    "lint": "eslint .",
+    "d:build": "docker build -t casino .",
+    "d:runp": "docker run --rm -p 0.0.0.0:3000:3000 --env-file .env casino"
+  }
+}
+```
+
+### Hot Reload
+
+- **Backend:** `bun --hot` - automatyczny restart przy zmianie plików
+- **Frontend:** Vite HMR - instant updates bez reload
+
+### Debugging
+
+#### Backend (Bun)
+
+```bash
+# Z breakpoints (VS Code)
+bun --inspect src/index.ts
+```
+
+#### Frontend (React DevTools)
+
+- Zainstaluj React DevTools extension
+- Otwórz DevTools w przeglądarce
+- TanStack Query DevTools: wbudowane w dev mode
+
+### Linting
+
+```bash
+# Frontend
+cd client
+bun run lint
+
+# Automatyczne fixowanie
+bun run lint --fix
+```
+
+### Database Studio (Drizzle Kit)
+
+```bash
+# Uruchom web UI do przeglądania bazy
+bunx drizzle-kit studio
+
+# Otworzy: https://local.drizzle.studio
+```
+
+---
+
+## 📝 Licencja
+
+Ten projekt jest licencjonowany na warunkach MIT License.
+
+---
+
+## 📌 Roadmap
+
+- [ ] **Więcej gier** - Blackjack, Poker, Slots
+- [ ] **Live chat** - WebSocket chat dla graczy
+- [ ] **Tournaments** - System turniejów z leaderboard
+- [ ] **Affiliate system** - Program partnerski
+- [ ] **Multi-language** - i18n support
+- [ ] **Mobile app** - React Native wrapper
+- [ ] **Crypto payments** - Bitcoin/ETH deposits
+- [ ] **Advanced analytics** - Dashboard dla adminów
+
+---
+
+<div align="center">
+
+**⭐ Jeśli projekt Ci się podoba, zostaw gwiazdkę! ⭐**
+
+Made with ❤️ and ☕ by fentashot
+
+</div>
