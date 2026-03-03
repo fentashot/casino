@@ -13,7 +13,7 @@ function BlackjackPage() {
   return (
     <div className="flex flex-col gap-5 pb-12">
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex items-start sm:items-center justify-between gap-4">
+      <div className="flex items-start sm:items-center justify-between gap-4 animate-fade-in">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
@@ -46,7 +46,9 @@ function BlackjackPage() {
       </div>
 
       {/* ── Game ────────────────────────────────────────────────────────── */}
-      <BlackjackGame initialBalance={user?.balance ?? 0} />
+      <div className="animate-slide-up" style={{ animationDelay: "60ms" }}>
+        <BlackjackGame initialBalance={user?.balance ?? 0} />
+      </div>
     </div>
   );
 }

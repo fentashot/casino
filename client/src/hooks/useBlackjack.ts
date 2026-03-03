@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import confetti from "canvas-confetti";
 import { formatCurrency } from "@/lib/format";
 
+import { playDealCardSound, playWinSound } from "@/lib/audio";
 import {
   type BlackjackGameState,
   type BlackjackAction,
@@ -296,6 +297,7 @@ export function useBlackjack(initialBalance = 0) {
             setDisplayGame(
               finalizeDisplayState(buildDisplayState(server, count)),
             );
+            playDealCardSound();
 
             if (isLast) {
               shownCountRef.current = countAllCards(server);
@@ -314,6 +316,7 @@ export function useBlackjack(initialBalance = 0) {
             // Mark flip occurred this round and render state where hole card
             // is flagged for flipping so the card component performs the 3D turn.
             flipFinishedRef.current = true;
+            playDealCardSound();
             setDisplayGame(
               finalizeDisplayState(
                 buildDisplayState(server, alreadyShown + idx),
@@ -362,6 +365,10 @@ export function useBlackjack(initialBalance = 0) {
 
       runAnimation(game, clearTable ? 0 : prevShown, () => {
         if (game.phase === "finished") {
+          const anyWin = game.playerHands.some(
+            (h) => h.result === "win" || h.result === "blackjack",
+          );
+          if (anyWin) playWinSound();
           showResultNotification(game, toast);
           queryClient.invalidateQueries({ queryKey: ["casino-history"] });
         }

@@ -304,9 +304,76 @@ function ChipSelector({
   onSelect,
   label,
 }: ChipSelectorProps) {
+  // Local input state to allow manual typing; keeps in sync with `selected`
+  const [input, setInput] = useState(String(selected));
+
+  useEffect(() => {
+    setInput(String(selected));
+  }, [selected]);
+
+  const applyManual = (raw: string) => {
+    const cleaned = raw.replace(/[^0-9]/g, "");
+    if (cleaned === "") {
+      // don't call onSelect with empty; just keep input and bail out
+      setInput("");
+      return;
+    }
+    const n = Math.max(1, parseInt(cleaned, 10) || 1);
+    setInput(String(n));
+    onSelect(n);
+  };
+
+  const changeByPercent = (pct: number) => {
+    // pct is e.g. 0.1 for +10% or -0.1 for -10%
+    const base = Number(selected) || 0;
+    const candidate = Math.max(1, Math.round(base * (1 + pct)));
+    setInput(String(candidate));
+    onSelect(candidate);
+  };
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       <div className="text-sm text-zinc-400">{label}</div>
+
+      {/* Manual input + +/-10% controls */}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => changeByPercent(-0.1)}
+          className="px-2 py-1 rounded bg-zinc-700 text-white"
+          aria-label="Decrease by 10 percent"
+        >
+          -10%
+        </button>
+
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={input}
+          onChange={(e) => {
+            setInput(e.target.value.replace(/[^0-9]/g, ""));
+          }}
+          onBlur={(e) => applyManual(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter")
+              applyManual((e.target as HTMLInputElement).value);
+          }}
+          className="w-28 text-center px-2 py-1 rounded bg-transparent border border-zinc-700 text-white font-mono"
+          aria-label="Manual chip value"
+        />
+
+        <button
+          type="button"
+          onClick={() => changeByPercent(0.1)}
+          className="px-2 py-1 rounded bg-zinc-700 text-white"
+          aria-label="Increase by 10 percent"
+        >
+          +10%
+        </button>
+      </div>
+
+      {/* Quick presets for convenience */}
       <div className="flex gap-2">
         {values.map((v) => (
           <button

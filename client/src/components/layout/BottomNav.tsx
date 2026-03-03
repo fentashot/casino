@@ -1,5 +1,5 @@
 import { Link, useMatchRoute } from "@tanstack/react-router";
-import { Dices, LayoutGrid, User, BarChart3 } from "lucide-react";
+import { Dices, LayoutGrid, User, BarChart3, Spade } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -13,6 +13,12 @@ const NAV_ITEMS = [
     label: "Roulette",
     to: "/games/roulette" as const,
     icon: Dices,
+    exactMatch: false,
+  },
+  {
+    label: "Blackjack",
+    to: "/games/blackjack" as const,
+    icon: Spade,
     exactMatch: false,
   },
   {

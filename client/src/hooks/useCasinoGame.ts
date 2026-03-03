@@ -1,18 +1,16 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { api } from '@/lib/api';
-import { generateClientSeed, generateIdempotencyKey } from '@/lib/roulette';
-import { SpinResponse } from '@server/types';
-import confetti from 'canvas-confetti';
-import type { RouletteSelection } from '@/components/RouletteControls';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useRef, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
+import { generateClientSeed, generateIdempotencyKey } from "@/lib/roulette";
+import { SpinResponse } from "@server/types";
+import confetti from "canvas-confetti";
+import type { RouletteSelection } from "@/components/RouletteControls";
 
 type Result = {
   number: number;
-  color: 'red' | 'black' | 'green';
+  color: "red" | "black" | "green";
 };
-
-const ANIMATION_DURATION = 3500;
 
 /**
  * Hook zarządzający stanem gry w kasynie (roulette)
@@ -26,14 +24,18 @@ export function useCasinoGame(initialBalance = 0) {
   const [spinData, setSpinData] = useState<SpinResponse | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
-  const [spinTimeoutId, setSpinTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [spinTimeoutId, setSpinTimeoutId] = useState<NodeJS.Timeout | null>(
+    null,
+  );
+  // Holds the server response until the wheel animation finishes
+  const pendingSpinRef = useRef<SpinResponse | null>(null);
 
   // Fetch user balance
   const { data: balanceData, isLoading: isBalanceLoading } = useQuery({
-    queryKey: ['casino-balance'],
+    queryKey: ["casino-balance"],
     queryFn: async () => {
       const res = await api.casino.balance.$get();
-      if (!res.ok) throw new Error('Failed to fetch balance');
+      if (!res.ok) throw new Error("Failed to fetch balance");
       return res.json();
     },
     initialData: { balance: initialBalance },
@@ -42,10 +44,10 @@ export function useCasinoGame(initialBalance = 0) {
 
   // Fetch next nonce
   const { data: nonceData, isLoading: isNonceLoading } = useQuery({
-    queryKey: ['casino-nonce'],
+    queryKey: ["casino-nonce"],
     queryFn: async () => {
       const res = await api.casino.nonce.$get();
-      if (!res.ok) throw new Error('Failed to fetch nonce');
+      if (!res.ok) throw new Error("Failed to fetch nonce");
       return res.json();
     },
     staleTime: Infinity,
@@ -55,154 +57,171 @@ export function useCasinoGame(initialBalance = 0) {
   const nextNonce = nonceData?.nextNonce ?? null;
   const isLoading = isBalanceLoading || isNonceLoading;
 
-  const showWinNotification = useCallback((spin: SpinResponse) => {
-    const profit = spin.totalWin - spin.totalBet;
+  const showWinNotification = useCallback(
+    (spin: SpinResponse) => {
+      const profit = spin.totalWin - spin.totalBet;
 
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#FFD700', '#00FF00', '#FF6B6B'],
-    });
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#FFD700", "#00FF00", "#FF6B6B"],
+      });
 
-    toast({
-      title: '🎉 Wygrana!',
-      description: `Wygrałeś ${spin.totalWin.toLocaleString('pl-PL')} zł${profit > 0 ? ` (zysk: +${profit.toLocaleString('pl-PL')} zł)` : ''
+      toast({
+        title: "🎉 Wygrana!",
+        description: `Wygrałeś ${spin.totalWin.toLocaleString("pl-PL")} zł${
+          profit > 0 ? ` (zysk: +${profit.toLocaleString("pl-PL")} zł)` : ""
         }`,
-    });
-  }, [toast]);
+      });
+    },
+    [toast],
+  );
 
-  const showLossNotification = useCallback((spin: SpinResponse) => {
-    toast({
-      title: '😔 Przegrana',
-      description: `Straciłeś ${spin.totalBet.toLocaleString('pl-PL')} zł`,
-      variant: 'destructive',
-    });
-  }, [toast]);
-
-  const handleSpinError = useCallback((
-    error: string,
-    status: number,
-    expectedNonce?: number
-  ) => {
-    setIsSpinning(false);
-
-    // Resync nonce if invalid
-    if (status === 400 && error === 'invalid_nonce' && expectedNonce) {
-      queryClient.setQueryData(['casino-nonce'], { nextNonce: expectedNonce });
+  const showLossNotification = useCallback(
+    (spin: SpinResponse) => {
       toast({
-        title: 'Synchronizacja',
-        description: 'Nonce zsynchronizowany. Spróbuj ponownie.',
+        title: "😔 Przegrana",
+        description: `Straciłeś ${spin.totalBet.toLocaleString("pl-PL")} zł`,
+        variant: "destructive",
       });
-      return { success: false, error: 'nonce_resync' };
-    }
+    },
+    [toast],
+  );
 
-    // Insufficient funds
-    if (status === 402) {
-      toast({
-        title: 'Brak środków',
-        description: 'Niewystarczające środki na koncie!',
-        variant: 'destructive',
-      });
-      return { success: false, error: 'insufficient_funds' };
-    }
-
-    // Generic error
-    toast({
-      title: 'Błąd',
-      description: error || 'Nieznany błąd',
-      variant: 'destructive',
-    });
-    return { success: false, error };
-  }, [queryClient, toast]);
-
-  const placeBets = useCallback(async (bets: RouletteSelection[]) => {
-    if (nextNonce === null) {
-      toast({
-        title: 'Ładowanie...',
-        description: 'Spróbuj ponownie za chwilę',
-        variant: 'destructive',
-      });
-      return { success: false, error: 'nonce_not_loaded' };
-    }
-
-    setShowResult(false);
-    setIsSpinning(true);
-
-    try {
-      const clientSeed = generateClientSeed();
-      const idempotencyKey = generateIdempotencyKey();
-
-      const res = await api.casino.spin.$post({
-        json: {
-          clientSeed,
-          nonce: nextNonce,
-          idempotencyKey,
-          bets: bets.map((b) => ({
-            type: b.type,
-            amount: b.amount,
-            color: b.color || undefined,
-            choice: b.choice,
-            numbers: b.numbers || [],
-          })),
-        },
-      });
-
-      const data = (await res.json()) as
-        | SpinResponse
-        | { error: string; expectedNonce?: number };
-
-      if (!res.ok) {
-        return handleSpinError(
-          'error' in data ? data.error : 'Request failed',
-          res.status,
-          'expectedNonce' in data ? data.expectedNonce : undefined
-        );
-      }
-
-      if (data && typeof data === 'object' && 'result' in data) {
-        const spin = data as SpinResponse;
-
-        setResult(spin.result);
-        setSpinData(spin);
-
-        // Update cache immediately
-        queryClient.setQueryData(['casino-balance'], { balance: spin.newBalance });
-        queryClient.setQueryData(['casino-nonce'], {
-          nextNonce: spin.provablyFair.nonce + 1,
-        });
-
-        // Safety timeout - force unlock after 10 seconds if wheel doesn't call onSpinEnd
-        const timeoutId = setTimeout(() => {
-          setIsSpinning(false);
-          setShowResult(true);
-          queryClient.invalidateQueries({ queryKey: ['casino-history'] });
-        }, 10000);
-        setSpinTimeoutId(timeoutId);
-
-        // Show notification after animation
-        setTimeout(() => {
-          if (spin.totalWin > 0) {
-            showWinNotification(spin);
-          } else {
-            showLossNotification(spin);
-          }
-        }, ANIMATION_DURATION);
-
-        return { success: true, error: null };
-      }
-
-      return { success: false, error: 'Invalid response' };
-    } catch (error) {
+  const handleSpinError = useCallback(
+    (error: string, status: number, expectedNonce?: number) => {
       setIsSpinning(false);
+
+      // Resync nonce if invalid
+      if (status === 400 && error === "invalid_nonce" && expectedNonce) {
+        queryClient.setQueryData(["casino-nonce"], {
+          nextNonce: expectedNonce,
+        });
+        toast({
+          title: "Synchronizacja",
+          description: "Nonce zsynchronizowany. Spróbuj ponownie.",
+        });
+        return { success: false, error: "nonce_resync" };
+      }
+
+      // Insufficient funds
+      if (status === 402) {
+        toast({
+          title: "Brak środków",
+          description: "Niewystarczające środki na koncie!",
+          variant: "destructive",
+        });
+        return { success: false, error: "insufficient_funds" };
+      }
+
+      // Generic error
       toast({
-        title: 'Błąd',
-        description: 'Wystąpił nieoczekiwany błąd',
-        variant: 'destructive',
+        title: "Błąd",
+        description: error || "Nieznany błąd",
+        variant: "destructive",
       });
       return { success: false, error };
-    }
-  }, [nextNonce, queryClient, toast, handleSpinError, showWinNotification, showLossNotification]);
+    },
+    [queryClient, toast],
+  );
+
+  const placeBets = useCallback(
+    async (bets: RouletteSelection[]) => {
+      if (nextNonce === null) {
+        toast({
+          title: "Ładowanie...",
+          description: "Spróbuj ponownie za chwilę",
+          variant: "destructive",
+        });
+        return { success: false, error: "nonce_not_loaded" };
+      }
+
+      setShowResult(false);
+      setIsSpinning(true);
+
+      try {
+        const clientSeed = generateClientSeed();
+        const idempotencyKey = generateIdempotencyKey();
+
+        const res = await api.casino.spin.$post({
+          json: {
+            clientSeed,
+            nonce: nextNonce,
+            idempotencyKey,
+            bets: bets.map((b) => ({
+              type: b.type,
+              amount: b.amount,
+              color: b.color || undefined,
+              choice: b.choice,
+              numbers: b.numbers || [],
+            })),
+          },
+        });
+
+        const data = (await res.json()) as
+          | SpinResponse
+          | { error: string; expectedNonce?: number };
+
+        if (!res.ok) {
+          return handleSpinError(
+            "error" in data ? data.error : "Request failed",
+            res.status,
+            "expectedNonce" in data ? data.expectedNonce : undefined,
+          );
+        }
+
+        if (data && typeof data === "object" && "result" in data) {
+          const spin = data as SpinResponse;
+
+          setResult(spin.result);
+          setSpinData(spin);
+
+          // Store result — balance/nonce update is deferred until onSpinEnd
+          // so the UI balance doesn't jump before the wheel stops
+          pendingSpinRef.current = spin;
+
+          // Safety timeout - force unlock after 10 seconds if wheel doesn't call onSpinEnd
+          const timeoutId = setTimeout(() => {
+            const pending = pendingSpinRef.current;
+            if (pending) {
+              queryClient.setQueryData(["casino-balance"], {
+                balance: pending.newBalance,
+              });
+              queryClient.setQueryData(["casino-nonce"], {
+                nextNonce: pending.provablyFair.nonce + 1,
+              });
+              pendingSpinRef.current = null;
+            }
+            setIsSpinning(false);
+            setShowResult(true);
+            queryClient.invalidateQueries({ queryKey: ["casino-history"] });
+          }, 10000);
+          setSpinTimeoutId(timeoutId);
+
+          return { success: true, error: null };
+        }
+
+        return { success: false, error: "Invalid response" };
+      } catch (error) {
+        setIsSpinning(false);
+        toast({
+          title: "Błąd",
+          description: "Wystąpił nieoczekiwany błąd",
+          variant: "destructive",
+        });
+        return { success: false, error };
+      }
+    },
+    [
+      nextNonce,
+      queryClient,
+      toast,
+      handleSpinError,
+      showWinNotification,
+      showLossNotification,
+    ],
+  );
 
   const onSpinEnd = useCallback(() => {
     // Clear safety timeout
@@ -211,11 +230,30 @@ export function useCasinoGame(initialBalance = 0) {
       setSpinTimeoutId(null);
     }
 
+    // Apply the deferred balance & nonce update now that the wheel has stopped
+    const pending = pendingSpinRef.current;
+    if (pending) {
+      queryClient.setQueryData(["casino-balance"], {
+        balance: pending.newBalance,
+      });
+      queryClient.setQueryData(["casino-nonce"], {
+        nextNonce: pending.provablyFair.nonce + 1,
+      });
+      pendingSpinRef.current = null;
+
+      // Show win/loss notification after balance is updated
+      if (pending.totalWin > 0) {
+        showWinNotification(pending);
+      } else {
+        showLossNotification(pending);
+      }
+    }
+
     setIsSpinning(false);
     setShowResult(true);
     // Invalidate history AFTER animation completes
-    queryClient.invalidateQueries({ queryKey: ['casino-history'] });
-  }, [queryClient, spinTimeoutId]);
+    queryClient.invalidateQueries({ queryKey: ["casino-history"] });
+  }, [queryClient, spinTimeoutId, showWinNotification, showLossNotification]);
 
   return {
     balance,

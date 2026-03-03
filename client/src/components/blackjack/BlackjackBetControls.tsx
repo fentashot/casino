@@ -74,12 +74,33 @@ function Chip({
 export function BlackjackBetControls({
   balance,
   minBet = 10,
-  maxBet = 100_000,
+  maxBet = 1_000_000,
   isLoading,
   onDeal,
 }: BlackjackBetControlsProps) {
   const [bet, setBet] = useState(minBet);
   const [isFirstChip, setIsFirstChip] = useState(true);
+
+  // Handler for manual numeric input. Accepts only digits, clamps to min/max/balance.
+  const handleManualBetChange = (valueStr: string) => {
+    const raw = valueStr.replace(/[^0-9]/g, "");
+    if (raw === "") {
+      // If the user empties the field, don't explode — set to minBet
+      setBet(minBet);
+      setIsFirstChip(false);
+      return;
+    }
+    const n = parseInt(raw, 10) || minBet;
+    const clamped = Math.max(minBet, Math.min(Math.min(maxBet, balance), n));
+    setBet(clamped);
+    setIsFirstChip(false);
+  };
+
+  const handleManualBetBlur = () => {
+    setBet((prev) =>
+      Math.max(minBet, Math.min(prev, Math.min(maxBet, balance))),
+    );
+  };
 
   const addChip = (value: number) => {
     setBet((prev) => {
@@ -107,22 +128,29 @@ export function BlackjackBetControls({
 
   return (
     <div className="flex flex-col items-center gap-4 h-full justify-between">
-      {/* Current bet display */}
+      {/* Current bet display with manual numeric input */}
       <div className="flex flex-col items-center gap-1">
         <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
           Bet
         </span>
         <div
           className={cn(
-            "flex items-center gap-2 rounded-2xl border px-5 py-2.5",
+            "flex items-center gap-2 rounded-2xl border px-4 py-2.5",
             "bg-card/60 border-border/50 backdrop-blur-sm",
             "min-w-[140px] justify-center",
           )}
         >
           <Coins className="h-4 w-4 text-amber-400 shrink-0" />
-          <span className="text-xl font-bold font-mono tracking-tight text-foreground">
-            {formatCurrency(effectiveBet)}
-          </span>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={String(bet)}
+            onChange={(e) => handleManualBetChange(e.target.value)}
+            onBlur={handleManualBetBlur}
+            className="text-xl font-bold font-mono tracking-tight text-foreground bg-transparent text-center outline-none w-36"
+            aria-label="Bet amount"
+          />
         </div>
         {bet > balance && (
           <span className="text-[11px] text-red-400 font-medium">

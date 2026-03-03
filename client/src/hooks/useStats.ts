@@ -37,6 +37,8 @@ export function useStatsOverview() {
     queryKey: ["stats-overview"],
     queryFn: fetchOverview,
     staleTime: STALE_MS,
+    // Always refetch when the stats page mounts so the dashboard shows fresh data
+    refetchOnMount: "always",
   });
 }
 
@@ -49,6 +51,8 @@ export function useBalanceHistory(limit = 200) {
     queryKey: ["stats-balance-history", limit],
     queryFn: () => fetchBalanceHistory(limit),
     staleTime: STALE_MS,
+    // Ensure the chart refreshes whenever the user navigates to the stats page
+    refetchOnMount: "always",
   });
 }
 
@@ -61,6 +65,8 @@ export function useDailyStats(days = 30) {
     queryKey: ["stats-daily", days],
     queryFn: () => fetchDaily(days),
     staleTime: STALE_MS,
+    // Always refetch on mount so period changes / re-entry show latest data
+    refetchOnMount: "always",
   });
 }
 
@@ -70,6 +76,7 @@ export function useHourlyHeatmap() {
     queryKey: ["stats-hourly-heatmap"],
     queryFn: fetchHourlyHeatmap,
     staleTime: STALE_MS,
+    refetchOnMount: "always",
   });
 }
 
@@ -79,6 +86,7 @@ export function useGameBreakdown() {
     queryKey: ["stats-game-breakdown"],
     queryFn: fetchGameBreakdown,
     staleTime: STALE_MS,
+    refetchOnMount: "always",
   });
 }
 
@@ -91,6 +99,8 @@ export function useRecentRounds(limit = 20) {
     queryKey: ["stats-recent", limit],
     queryFn: () => fetchRecent(limit),
     staleTime: STALE_MS,
+    // Recent rounds should be up-to-date whenever user opens the stats page
+    refetchOnMount: "always",
   });
 }
 

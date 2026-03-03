@@ -9,6 +9,7 @@ import {
   Sparkles,
   Shield,
   BarChart3,
+  Spade,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/auth-context";
@@ -27,6 +28,11 @@ const NAV_ITEMS = [
     label: "Roulette",
     to: "/games/roulette" as const,
     icon: Dices,
+  },
+  {
+    label: "Blackjack",
+    to: "/games/blackjack" as const,
+    icon: Spade,
   },
   {
     label: "Statystyki",
