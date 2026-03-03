@@ -1,39 +1,16 @@
-import { api } from "@/lib/api";
+import { fetchHistory, type Bet } from "@/lib/roulette/api";
 import { useQuery } from "@tanstack/react-query";
 import { ROULETTE_COLORS } from "@/lib/roulette";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ChevronDown, Clock, Trophy, TrendingDown } from "lucide-react";
 
-type Bet = {
-  type: string;
-  amount: string;
-  win: string;
-  numbers: string;
-  color?: string | null;
-  choice?: string | null;
-};
-
-type Spin = {
-  id: string;
-  number: number;
-  color: string;
-  totalBet: string;
-  totalWin: string;
-  createdAt: string;
-  bets: Bet[];
-};
-
 export function SpinHistory() {
   const [expandedSpinId, setExpandedSpinId] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["casino-history"],
-    queryFn: async () => {
-      const res = await api.casino.history.$get({ query: { limit: "10" } });
-      if (!res.ok) throw new Error("Failed to fetch history");
-      return res.json() as Promise<{ spins: Spin[] }>;
-    },
+    queryFn: () => fetchHistory(10),
     staleTime: 10000,
   });
 

@@ -3,7 +3,6 @@ import { useAuth } from "@/auth-context";
 import {
   Dices,
   Clock,
-  Sparkles,
   ArrowRight,
   Star,
   Layers,
@@ -35,24 +34,6 @@ function GamesIndex() {
           Pick a game and test your luck. All outcomes are cryptographically
           verified.
         </p>
-      </div>
-
-      {/* Balance pill */}
-      <div
-        className="flex items-center gap-3 rounded-xl border border-border/40 bg-card/40 backdrop-blur-sm px-4 py-3 w-fit animate-slide-up"
-        style={{ animationDelay: "60ms" }}
-      >
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Sparkles className="h-4 w-4" />
-        </div>
-        <div className="flex flex-col">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Balance
-          </span>
-          <span className="text-base font-bold font-mono text-foreground">
-            {formatCurrency(user?.balance ?? 0)}
-          </span>
-        </div>
       </div>
 
       {/* Stats summary — links to /games/stats */}
@@ -269,19 +250,6 @@ function ComingSoonCard({
       {/* Diagonal "coming soon" overlay line */}
       <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-muted/10" />
     </div>
-  );
-}
-
-/* ============================================================================
-   HELPERS
-   ============================================================================ */
-
-function formatCurrency(value: number): string {
-  return (
-    value.toLocaleString("pl-PL", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }) + " zł"
   );
 }
 

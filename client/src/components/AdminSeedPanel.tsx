@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { fetchSeeds, rotateSeed, revealSeed } from '@/lib/roulette/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -34,31 +34,18 @@ export function AdminSeedPanel() {
   // Fetch seeds list
   const { data, isLoading, error } = useQuery<SeedsResponse>({
     queryKey: ['admin-seeds'],
-    queryFn: async () => {
-      const res = await api.casino.seeds.$get();
-      if (!res.ok) {
-        throw new Error('Failed to fetch seeds');
-      }
-      return res.json();
-    },
+    queryFn: fetchSeeds,
   });
 
   // Rotate seed mutation
   const rotateMutation = useMutation({
-    mutationFn: async () => {
-      const res = await api.casino.rotate.$post();
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error((error as { error?: string }).error || 'Failed to rotate seed');
-      }
-      return res.json();
-    },
+    mutationFn: rotateSeed,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-seeds'] });
       queryClient.invalidateQueries({ queryKey: ['server-seed-hash'] });
       toast({
         title: 'Seed rotated',
-        description: `New hash: ${(data as { newSeedHash: string }).newSeedHash.substring(0, 16)}...`,
+        description: `New hash: ${data.newSeedHash.substring(0, 16)}...`,
         variant: 'default',
       });
     },
@@ -73,16 +60,7 @@ export function AdminSeedPanel() {
 
   // Reveal seed mutation
   const revealMutation = useMutation({
-    mutationFn: async (seedId: string) => {
-      const res = await api.casino.reveal.$post({
-        json: { seedId },
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error((error as { error?: string }).error || 'Failed to reveal seed');
-      }
-      return { seedId, ...(await res.json()) as { seed: string } };
-    },
+    mutationFn: revealSeed,
     onSuccess: (data) => {
       setRevealedSeeds((prev) => ({ ...prev, [data.seedId]: data.seed }));
       queryClient.invalidateQueries({ queryKey: ['admin-seeds'] });

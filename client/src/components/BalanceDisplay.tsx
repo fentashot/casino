@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { fetchBalance } from "@/lib/roulette/api";
 import { cn } from "@/lib/utils";
 import { Wallet } from "lucide-react";
 
@@ -16,11 +16,7 @@ export function BalanceDisplay({
 }: BalanceDisplayProps) {
   const { data, isLoading } = useQuery({
     queryKey: ["casino-balance"],
-    queryFn: async () => {
-      const res = await api.casino.balance.$get();
-      if (!res.ok) throw new Error("Failed to fetch balance");
-      return res.json();
-    },
+    queryFn: fetchBalance,
     initialData: { balance: initialBalance },
     staleTime: 5000,
   });

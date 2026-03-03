@@ -97,3 +97,17 @@ export function generateIdempotencyKey(): string {
   const random = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
   return `${timestamp}-${random}`;
 }
+
+// API client
+export {
+  fetchBalance,
+  fetchNonce,
+  submitSpin,
+  fetchHistory,
+  fetchSeeds,
+  rotateSeed,
+  revealSeed,
+} from './api';
+
+export type { SpinRequest, SpinApiResult } from './api';
+

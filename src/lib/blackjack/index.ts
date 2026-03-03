@@ -70,4 +70,6 @@ export {
   saveGame,
   clearGame,
   getStoreStats,
+  markPersisted,
+  isPersisted,
 } from "./gameStore";

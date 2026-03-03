@@ -27,6 +27,13 @@ const gameStore = new Map<string, StoredGame>();
 /** userId → gameId mapping for quick lookups */
 const userGameMap = new Map<string, string>();
 
+/**
+ * Tracks gameIds that have already been written to the DB.
+ * Owned by the store (not the value object) so saveGame() can never
+ * accidentally clobber the flag by overwriting the game state.
+ */
+const persistedIds = new Set<string>();
+
 /* ============================================================================
    Public API
    ============================================================================ */
@@ -83,7 +90,23 @@ export function clearGame(userId: string): void {
   if (gameId) {
     gameStore.delete(gameId);
     userGameMap.delete(userId);
+    persistedIds.delete(gameId);
   }
+}
+
+/**
+ * Mark a game as already persisted to the DB.
+ * Called before the actual INSERT so concurrent paths see the flag immediately.
+ */
+export function markPersisted(gameId: string): void {
+  persistedIds.add(gameId);
+}
+
+/**
+ * Returns true if this game has already been written to the DB.
+ */
+export function isPersisted(gameId: string): boolean {
+  return persistedIds.has(gameId);
 }
 
 /**

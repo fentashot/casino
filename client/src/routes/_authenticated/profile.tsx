@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/auth-context";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { fetchHistory } from "@/lib/roulette/api";
 import {
   User,
   Mail,
@@ -23,27 +23,13 @@ export const Route = createFileRoute("/_authenticated/profile")({
   component: Profile,
 });
 
-type Spin = {
-  id: string;
-  number: number;
-  color: string;
-  totalBet: string;
-  totalWin: string;
-  createdAt: string;
-  bets: unknown[];
-};
-
 function Profile() {
   const { user, logout } = useAuth();
   const isAdmin = user?.role === "admin";
 
   const { data: historyData } = useQuery({
     queryKey: ["casino-history"],
-    queryFn: async () => {
-      const res = await api.casino.history.$get({ query: { limit: "50" } });
-      if (!res.ok) throw new Error("Failed to fetch history");
-      return res.json() as Promise<{ spins: Spin[] }>;
-    },
+    queryFn: () => fetchHistory(50),
     staleTime: 10000,
   });
 
@@ -61,11 +47,11 @@ function Profile() {
 
   const initials = user?.name
     ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
     : "??";
 
   return (
@@ -249,7 +235,7 @@ function Profile() {
                       "flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-white",
                       spin.color === "red" && "bg-red-600",
                       spin.color === "black" &&
-                        "bg-zinc-900 border border-zinc-700",
+                      "bg-zinc-900 border border-zinc-700",
                       spin.color === "green" && "bg-emerald-600",
                     )}
                   >
