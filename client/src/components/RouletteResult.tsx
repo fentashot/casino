@@ -1,11 +1,13 @@
 /**
- * Komponent wyświetlający wynik spinu (numer i kolor)
- * Zawsze jest widoczny, ale animuje się przy zmianie wyniku
+ * RouletteResult — Compact result badge showing the last spin number & color.
+ * Appears with a smooth slide-up + fade animation when a result lands.
  */
+
+import { cn } from "@/lib/utils";
 
 type Result = {
   number: number;
-  color: 'red' | 'black' | 'green';
+  color: "red" | "black" | "green";
 };
 
 type Props = {
@@ -13,28 +15,67 @@ type Props = {
   showResult: boolean;
 };
 
-const COLOR_MAP = {
-  red: '#FF013C',
-  black: '#1D2224',
-  green: '#16A34A',
-} as const;
+const COLOR_STYLES: Record<
+  Result["color"],
+  { bg: string; ring: string; text: string }
+> = {
+  red: {
+    bg: "bg-red-600",
+    ring: "ring-red-500/30",
+    text: "text-red-400",
+  },
+  black: {
+    bg: "bg-zinc-900 border border-zinc-700",
+    ring: "ring-zinc-500/20",
+    text: "text-zinc-400",
+  },
+  green: {
+    bg: "bg-emerald-600",
+    ring: "ring-emerald-500/30",
+    text: "text-emerald-400",
+  },
+};
 
 export function RouletteResult({ result, showResult }: Props) {
+  const style = result ? COLOR_STYLES[result.color] : null;
+
   return (
-    <div className="w-12 h-12 overflow-hidden bg-zinc-700 rounded-md">
+    <div className="relative h-12 w-12 overflow-hidden rounded-xl">
+      {/* Backdrop */}
+      <div className="absolute inset-0 rounded-xl bg-muted/30 border border-border/30" />
+
+      {/* Animated result */}
       <div
-        className={`w-12 h-12 rounded-md text-center flex items-center justify-center font-bold duration-200 transform transition-all ease-in-out ${showResult && result ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-70'
-          }`}
+        className={cn(
+          "absolute inset-0 flex items-center justify-center rounded-xl transition-all duration-500 ease-out",
+          showResult && result
+            ? "translate-y-0 opacity-100 scale-100"
+            : "translate-y-4 opacity-0 scale-90",
+        )}
       >
-        <div
-          className="w-full h-full rounded-md text-white flex items-center justify-center text-sm"
-          style={{
-            backgroundColor: result ? COLOR_MAP[result.color] : '#555',
-          }}
-        >
-          {result?.number ?? '-'}
-        </div>
+        {result && style && (
+          <div
+            className={cn(
+              "flex h-full w-full items-center justify-center rounded-xl ring-2",
+              style.bg,
+              style.ring,
+            )}
+          >
+            <span className="text-sm font-extrabold text-white font-mono tabular-nums drop-shadow-sm">
+              {result.number}
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* Placeholder when no result */}
+      {!showResult && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-xs font-medium text-muted-foreground/40">
+            —
+          </span>
+        </div>
+      )}
     </div>
   );
 }

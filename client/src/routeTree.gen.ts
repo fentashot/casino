@@ -17,7 +17,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedGamesRouteRouteImport } from './routes/_authenticated/games/route'
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games/index'
+import { Route as AuthenticatedGamesStatsRouteImport } from './routes/_authenticated/games/stats'
 import { Route as AuthenticatedGamesRouletteRouteImport } from './routes/_authenticated/games/roulette'
+import { Route as AuthenticatedGamesBlackjackRouteImport } from './routes/_authenticated/games/blackjack'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -58,10 +60,21 @@ const AuthenticatedGamesIndexRoute = AuthenticatedGamesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedGamesRouteRoute,
 } as any)
+const AuthenticatedGamesStatsRoute = AuthenticatedGamesStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => AuthenticatedGamesRouteRoute,
+} as any)
 const AuthenticatedGamesRouletteRoute =
   AuthenticatedGamesRouletteRouteImport.update({
     id: '/roulette',
     path: '/roulette',
+    getParentRoute: () => AuthenticatedGamesRouteRoute,
+  } as any)
+const AuthenticatedGamesBlackjackRoute =
+  AuthenticatedGamesBlackjackRouteImport.update({
+    id: '/blackjack',
+    path: '/blackjack',
     getParentRoute: () => AuthenticatedGamesRouteRoute,
   } as any)
 
@@ -72,7 +85,9 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/games': typeof AuthenticatedGamesRouteRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
+  '/games/blackjack': typeof AuthenticatedGamesBlackjackRoute
   '/games/roulette': typeof AuthenticatedGamesRouletteRoute
+  '/games/stats': typeof AuthenticatedGamesStatsRoute
   '/games/': typeof AuthenticatedGamesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -81,7 +96,9 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/games/blackjack': typeof AuthenticatedGamesBlackjackRoute
   '/games/roulette': typeof AuthenticatedGamesRouletteRoute
+  '/games/stats': typeof AuthenticatedGamesStatsRoute
   '/games': typeof AuthenticatedGamesIndexRoute
 }
 export interface FileRoutesById {
@@ -93,7 +110,9 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/_authenticated/games': typeof AuthenticatedGamesRouteRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/games/blackjack': typeof AuthenticatedGamesBlackjackRoute
   '/_authenticated/games/roulette': typeof AuthenticatedGamesRouletteRoute
+  '/_authenticated/games/stats': typeof AuthenticatedGamesStatsRoute
   '/_authenticated/games/': typeof AuthenticatedGamesIndexRoute
 }
 export interface FileRouteTypes {
@@ -105,7 +124,9 @@ export interface FileRouteTypes {
     | '/register'
     | '/games'
     | '/profile'
+    | '/games/blackjack'
     | '/games/roulette'
+    | '/games/stats'
     | '/games/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -114,7 +135,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/profile'
+    | '/games/blackjack'
     | '/games/roulette'
+    | '/games/stats'
     | '/games'
   id:
     | '__root__'
@@ -125,7 +148,9 @@ export interface FileRouteTypes {
     | '/register'
     | '/_authenticated/games'
     | '/_authenticated/profile'
+    | '/_authenticated/games/blackjack'
     | '/_authenticated/games/roulette'
+    | '/_authenticated/games/stats'
     | '/_authenticated/games/'
   fileRoutesById: FileRoutesById
 }
@@ -195,6 +220,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGamesIndexRouteImport
       parentRoute: typeof AuthenticatedGamesRouteRoute
     }
+    '/_authenticated/games/stats': {
+      id: '/_authenticated/games/stats'
+      path: '/stats'
+      fullPath: '/games/stats'
+      preLoaderRoute: typeof AuthenticatedGamesStatsRouteImport
+      parentRoute: typeof AuthenticatedGamesRouteRoute
+    }
     '/_authenticated/games/roulette': {
       id: '/_authenticated/games/roulette'
       path: '/roulette'
@@ -202,17 +234,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGamesRouletteRouteImport
       parentRoute: typeof AuthenticatedGamesRouteRoute
     }
+    '/_authenticated/games/blackjack': {
+      id: '/_authenticated/games/blackjack'
+      path: '/blackjack'
+      fullPath: '/games/blackjack'
+      preLoaderRoute: typeof AuthenticatedGamesBlackjackRouteImport
+      parentRoute: typeof AuthenticatedGamesRouteRoute
+    }
   }
 }
 
 interface AuthenticatedGamesRouteRouteChildren {
+  AuthenticatedGamesBlackjackRoute: typeof AuthenticatedGamesBlackjackRoute
   AuthenticatedGamesRouletteRoute: typeof AuthenticatedGamesRouletteRoute
+  AuthenticatedGamesStatsRoute: typeof AuthenticatedGamesStatsRoute
   AuthenticatedGamesIndexRoute: typeof AuthenticatedGamesIndexRoute
 }
 
 const AuthenticatedGamesRouteRouteChildren: AuthenticatedGamesRouteRouteChildren =
   {
+    AuthenticatedGamesBlackjackRoute: AuthenticatedGamesBlackjackRoute,
     AuthenticatedGamesRouletteRoute: AuthenticatedGamesRouletteRoute,
+    AuthenticatedGamesStatsRoute: AuthenticatedGamesStatsRoute,
     AuthenticatedGamesIndexRoute: AuthenticatedGamesIndexRoute,
   }
 

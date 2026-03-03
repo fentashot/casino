@@ -5,6 +5,8 @@ import { serveStatic } from "hono/bun";
 import { auth, useAuthMiddleware, type AuthUser } from "./auth";
 import { cors } from "hono/cors";
 import { casinoRoutes } from "./routes/casino";
+import { blackjackRoutes } from "./routes/blackjack";
+import { statsRoutes } from "./routes/stats";
 import { secureHeaders } from "hono/secure-headers";
 import { rateLimiter } from "hono-rate-limiter";
 
@@ -18,12 +20,15 @@ interface Vars {
 const app = new Hono<Vars>();
 
 // Security headers
-app.use("*", secureHeaders({
-  xFrameOptions: "DENY",
-  xContentTypeOptions: "nosniff",
-  referrerPolicy: "strict-origin-when-cross-origin",
-  crossOriginEmbedderPolicy: false, // Needed for some assets
-}));
+app.use(
+  "*",
+  secureHeaders({
+    xFrameOptions: "DENY",
+    xContentTypeOptions: "nosniff",
+    referrerPolicy: "strict-origin-when-cross-origin",
+    crossOriginEmbedderPolicy: false, // Needed for some assets
+  }),
+);
 
 app.use("*", logger());
 
@@ -32,7 +37,10 @@ const apiLimiter = rateLimiter({
   windowMs: 60 * 1000, // 1 minute
   limit: 100,
   standardHeaders: "draft-6",
-  keyGenerator: (c) => c.req.header("x-forwarded-for") || c.req.header("cf-connecting-ip") || "unknown",
+  keyGenerator: (c) =>
+    c.req.header("x-forwarded-for") ||
+    c.req.header("cf-connecting-ip") ||
+    "unknown",
 });
 
 // Stricter rate limit for auth endpoints (20 requests per minute)
@@ -40,7 +48,10 @@ const authLimiter = rateLimiter({
   windowMs: 60 * 1000,
   limit: 20,
   standardHeaders: "draft-6",
-  keyGenerator: (c) => c.req.header("x-forwarded-for") || c.req.header("cf-connecting-ip") || "unknown",
+  keyGenerator: (c) =>
+    c.req.header("x-forwarded-for") ||
+    c.req.header("cf-connecting-ip") ||
+    "unknown",
 });
 
 // Stricter rate limit for casino spin (30 spins per minute)
@@ -48,12 +59,27 @@ const spinLimiter = rateLimiter({
   windowMs: 60 * 1000,
   limit: 30,
   standardHeaders: "draft-6",
-  keyGenerator: (c) => c.req.header("x-forwarded-for") || c.req.header("cf-connecting-ip") || "unknown",
+  keyGenerator: (c) =>
+    c.req.header("x-forwarded-for") ||
+    c.req.header("cf-connecting-ip") ||
+    "unknown",
 });
 
 app.use("/api/*", apiLimiter);
 app.use("/api/auth/*", authLimiter);
 app.use("/api/casino/spin", spinLimiter);
+
+// Rate limit for blackjack actions (60 actions per minute)
+const blackjackLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  limit: 60,
+  standardHeaders: "draft-6",
+  keyGenerator: (c) =>
+    c.req.header("x-forwarded-for") ||
+    c.req.header("cf-connecting-ip") ||
+    "unknown",
+});
+app.use("/api/blackjack/*", blackjackLimiter);
 
 app.use(
   "/api/auth/*",
@@ -69,11 +95,13 @@ app.use(
     exposeHeaders: ["Content-Length"],
     maxAge: 600,
     credentials: true,
-  })
+  }),
 );
 
 app.use("/api/expenses/*", useAuthMiddleware);
 app.use("/api/casino/*", useAuthMiddleware);
+app.use("/api/blackjack/*", useAuthMiddleware);
+app.use("/api/stats/*", useAuthMiddleware);
 app.use("/api/me", useAuthMiddleware);
 
 // Get current user info with role
@@ -90,7 +118,9 @@ app.get("/api/me", (c) => {
 const apiRoutes = app
   .basePath("/api")
   .route("/expenses", expensesRoutes)
-  .route("/casino", casinoRoutes);
+  .route("/casino", casinoRoutes)
+  .route("/blackjack", blackjackRoutes)
+  .route("/stats", statsRoutes);
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => {
   return auth.handler(c.req.raw);
@@ -103,7 +133,7 @@ app.get(
     onNotFound(path, c) {
       c.text("Not Found", 404);
     },
-  })
+  }),
 );
 
 app.get("*", serveStatic({ path: "./client/dist/index.html" }));

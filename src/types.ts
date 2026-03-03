@@ -1,4 +1,3 @@
-import { z } from "better-auth";
 import { auth } from "./auth";
 
 export type User = typeof auth.$Infer.Session.user;
@@ -12,7 +11,7 @@ export interface Vars {
 }
 
 export interface SpinResponse {
-  result: { number: number; color: 'red' | 'black' | 'green' };
+  result: { number: number; color: "red" | "black" | "green" };
   newBalance: number;
   totalBet: number;
   totalWin: number;
