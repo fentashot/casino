@@ -19,6 +19,7 @@ import { Route as AuthenticatedGamesRouteRouteImport } from './routes/_authentic
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games/index'
 import { Route as AuthenticatedGamesStatsRouteImport } from './routes/_authenticated/games/stats'
 import { Route as AuthenticatedGamesRouletteRouteImport } from './routes/_authenticated/games/roulette'
+import { Route as AuthenticatedGamesPlinkoRouteImport } from './routes/_authenticated/games/plinko'
 import { Route as AuthenticatedGamesBlackjackRouteImport } from './routes/_authenticated/games/blackjack'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -71,6 +72,12 @@ const AuthenticatedGamesRouletteRoute =
     path: '/roulette',
     getParentRoute: () => AuthenticatedGamesRouteRoute,
   } as any)
+const AuthenticatedGamesPlinkoRoute =
+  AuthenticatedGamesPlinkoRouteImport.update({
+    id: '/plinko',
+    path: '/plinko',
+    getParentRoute: () => AuthenticatedGamesRouteRoute,
+  } as any)
 const AuthenticatedGamesBlackjackRoute =
   AuthenticatedGamesBlackjackRouteImport.update({
     id: '/blackjack',
@@ -86,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/games': typeof AuthenticatedGamesRouteRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
   '/games/blackjack': typeof AuthenticatedGamesBlackjackRoute
+  '/games/plinko': typeof AuthenticatedGamesPlinkoRoute
   '/games/roulette': typeof AuthenticatedGamesRouletteRoute
   '/games/stats': typeof AuthenticatedGamesStatsRoute
   '/games/': typeof AuthenticatedGamesIndexRoute
@@ -97,6 +105,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/games/blackjack': typeof AuthenticatedGamesBlackjackRoute
+  '/games/plinko': typeof AuthenticatedGamesPlinkoRoute
   '/games/roulette': typeof AuthenticatedGamesRouletteRoute
   '/games/stats': typeof AuthenticatedGamesStatsRoute
   '/games': typeof AuthenticatedGamesIndexRoute
@@ -111,6 +120,7 @@ export interface FileRoutesById {
   '/_authenticated/games': typeof AuthenticatedGamesRouteRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/games/blackjack': typeof AuthenticatedGamesBlackjackRoute
+  '/_authenticated/games/plinko': typeof AuthenticatedGamesPlinkoRoute
   '/_authenticated/games/roulette': typeof AuthenticatedGamesRouletteRoute
   '/_authenticated/games/stats': typeof AuthenticatedGamesStatsRoute
   '/_authenticated/games/': typeof AuthenticatedGamesIndexRoute
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
     | '/games'
     | '/profile'
     | '/games/blackjack'
+    | '/games/plinko'
     | '/games/roulette'
     | '/games/stats'
     | '/games/'
@@ -136,6 +147,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/profile'
     | '/games/blackjack'
+    | '/games/plinko'
     | '/games/roulette'
     | '/games/stats'
     | '/games'
@@ -149,6 +161,7 @@ export interface FileRouteTypes {
     | '/_authenticated/games'
     | '/_authenticated/profile'
     | '/_authenticated/games/blackjack'
+    | '/_authenticated/games/plinko'
     | '/_authenticated/games/roulette'
     | '/_authenticated/games/stats'
     | '/_authenticated/games/'
@@ -234,6 +247,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGamesRouletteRouteImport
       parentRoute: typeof AuthenticatedGamesRouteRoute
     }
+    '/_authenticated/games/plinko': {
+      id: '/_authenticated/games/plinko'
+      path: '/plinko'
+      fullPath: '/games/plinko'
+      preLoaderRoute: typeof AuthenticatedGamesPlinkoRouteImport
+      parentRoute: typeof AuthenticatedGamesRouteRoute
+    }
     '/_authenticated/games/blackjack': {
       id: '/_authenticated/games/blackjack'
       path: '/blackjack'
@@ -246,6 +266,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedGamesRouteRouteChildren {
   AuthenticatedGamesBlackjackRoute: typeof AuthenticatedGamesBlackjackRoute
+  AuthenticatedGamesPlinkoRoute: typeof AuthenticatedGamesPlinkoRoute
   AuthenticatedGamesRouletteRoute: typeof AuthenticatedGamesRouletteRoute
   AuthenticatedGamesStatsRoute: typeof AuthenticatedGamesStatsRoute
   AuthenticatedGamesIndexRoute: typeof AuthenticatedGamesIndexRoute
@@ -254,6 +275,7 @@ interface AuthenticatedGamesRouteRouteChildren {
 const AuthenticatedGamesRouteRouteChildren: AuthenticatedGamesRouteRouteChildren =
   {
     AuthenticatedGamesBlackjackRoute: AuthenticatedGamesBlackjackRoute,
+    AuthenticatedGamesPlinkoRoute: AuthenticatedGamesPlinkoRoute,
     AuthenticatedGamesRouletteRoute: AuthenticatedGamesRouletteRoute,
     AuthenticatedGamesStatsRoute: AuthenticatedGamesStatsRoute,
     AuthenticatedGamesIndexRoute: AuthenticatedGamesIndexRoute,

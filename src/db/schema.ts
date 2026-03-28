@@ -251,3 +251,34 @@ export const userBalanceRelations = relations(userBalance, ({ one }) => ({
     references: [user.id],
   }),
 }));
+
+// ============ Plinko ============
+
+export const plinkoRound = pgTable(
+  "plinko_round",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    bet: numeric("bet").notNull(),
+    totalWin: numeric("total_win").notNull(),
+    rows: integer("rows").notNull(),
+    difficulty: text("difficulty").notNull(),
+    finalBucket: integer("final_bucket").notNull(),
+    multiplier: numeric("multiplier").notNull(),
+    balanceAfter: numeric("balance_after").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("plinko_round_user_id_idx").on(table.userId),
+    index("plinko_round_created_at_idx").on(table.createdAt),
+  ],
+);
+
+export const plinkoRoundRelations = relations(plinkoRound, ({ one }) => ({
+  user: one(user, {
+    fields: [plinkoRound.userId],
+    references: [user.id],
+  }),
+}));

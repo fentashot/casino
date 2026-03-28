@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/auth-context";
-import { Dices, Clock, ArrowRight, Star, Layers, TrendingUp } from "lucide-react";
+import { Dices, Clock, ArrowRight, Star, Layers, TrendingUp, Rows3 } from "lucide-react";
 
 import { StatsSummaryCards } from "@/components/stats";
 import { useStatsSummary } from "@/hooks/useStats";
@@ -92,7 +92,7 @@ function GamesIndex() {
       <div className="space-y-3 animate-slide-up" style={{ animationDelay: "180ms" }}>
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold tracking-tight text-foreground">All Games</h3>
-          <span className="text-xs text-muted-foreground">2 available</span>
+          <span className="text-xs text-muted-foreground">3 available</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger-children">
@@ -110,9 +110,12 @@ function GamesIndex() {
             tags={["Live", "3:2 BJ"]}
             to="/games/blackjack"
           />
-          <ComingSoonCard
-            title="Crash"
-            description="Multiplier prediction game"
+          <GameCard
+            title="Plinko"
+            description="Drop the ball through the pegs to win big"
+            icon={<Rows3 className="h-5 w-5" />}
+            tags={["Up to 1000×", "Live"]}
+            to="/games/plinko"
           />
         </div>
       </div>

@@ -5,6 +5,7 @@ import { auth, useAuthMiddleware, type AuthUser } from "./auth";
 import { expensesRoutes } from "./routes/expenses";
 import { casinoRoutes } from "./routes/casino";
 import { blackjackRoutes } from "./routes/blackjack";
+import { plinkoRoutes } from "./routes/plinko";
 import { statsRoutes } from "./routes/stats";
 import {
   securityHeaders,
@@ -49,6 +50,7 @@ app.use("/api/auth/*", authCors);
 app.use("/api/expenses/*", useAuthMiddleware);
 app.use("/api/casino/*", useAuthMiddleware);
 app.use("/api/blackjack/*", useAuthMiddleware);
+app.use("/api/plinko/*", useAuthMiddleware);
 app.use("/api/stats/*", useAuthMiddleware);
 app.use("/api/me", useAuthMiddleware);
 
@@ -68,6 +70,7 @@ const apiRoutes = app
   .route("/expenses", expensesRoutes)
   .route("/casino", casinoRoutes)
   .route("/blackjack", blackjackRoutes)
+  .route("/plinko", plinkoRoutes)
   .route("/stats", statsRoutes);
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => {
