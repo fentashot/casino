@@ -420,7 +420,7 @@ export default function RouletteControls({
 
   return (
     <div className="max-w-fit mx-auto space-y-3">
-      <div className="rounded-2xl border border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden p-6 px-8">
+      <div className="rounded-2xl border border-border bg-card overflow-hidden p-6 px-8">
         <div className="grid grid-cols-[auto,1fr,auto] grid-rows-[auto,1fr]">
           {/* Zero */}
           <div className="relative">
@@ -556,7 +556,7 @@ export default function RouletteControls({
       </div>
 
       {/* Controls Panel */}
-      <div className="rounded-2xl border border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden p-6 px-8">
+      <div className="rounded-2xl border border-border bg-card overflow-hidden p-6 px-8">
         {/* <div className="text-xl text-zinc-400 flex items-center gap-3 mb-5">
           Balance:
           <motion.span

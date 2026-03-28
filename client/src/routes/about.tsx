@@ -7,15 +7,8 @@ export const Route = createFileRoute("/about")({
 
 function About() {
   return (
-    <div className="relative min-h-dvh bg-background">
-      {/* Ambient background */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute -top-[30%] -left-[15%] h-[60vh] w-[60vh] rounded-full bg-primary/[0.05] blur-[120px]" />
-        <div className="absolute -bottom-[20%] -right-[10%] h-[40vh] w-[40vh] rounded-full bg-accent/[0.03] blur-[100px]" />
-        <div className="absolute inset-0 bg-dots opacity-15" />
-      </div>
-
-      <div className="relative z-10 mx-auto max-w-2xl px-6 py-16 sm:py-24">
+    <div className="min-h-dvh bg-background">
+      <div className="mx-auto max-w-2xl px-6 py-16 sm:py-24">
         {/* Back link */}
         <Link
           to="/"
@@ -42,7 +35,7 @@ function About() {
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-            About <span className="text-gradient-premium">NEXUS Casino</span>
+            About <span className="text-primary">NEXUS Casino</span>
           </h1>
 
           <p className="text-base text-muted-foreground leading-relaxed max-w-lg">
@@ -101,7 +94,7 @@ function About() {
             ].map((tech) => (
               <span
                 key={tech}
-                className="inline-flex items-center rounded-lg border border-border/40 bg-card/40 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground hover:border-border/60"
+                className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 {tech}
               </span>
@@ -139,11 +132,8 @@ function FeatureSection({
   description: string;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-card/30 backdrop-blur-sm p-6 transition-all duration-300 hover:border-border/60 hover:bg-card/50">
-      {/* Subtle corner glow */}
-      <div className="absolute -top-8 -right-8 h-24 w-24 rounded-full bg-primary/[0.04] blur-[30px] pointer-events-none" />
-
-      <div className="relative z-10 flex gap-4">
+    <div className="rounded-2xl border border-border bg-card p-6 transition-all duration-200 hover:bg-muted/30">
+      <div className="flex gap-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/15 text-primary">
           {icon}
         </div>

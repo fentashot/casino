@@ -35,7 +35,7 @@ const RULES = [
 
 export function RulesReference() {
   return (
-    <div className="rounded-xl border border-border/30 bg-card/20 p-4">
+    <div className="rounded-xl border border-border bg-card p-4">
       <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
         Zasady
       </p>

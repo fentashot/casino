@@ -70,21 +70,14 @@ function Profile() {
           USER CARD — Avatar + info + actions
           ================================================================ */}
       <div className="animate-slide-up" style={{ animationDelay: "60ms" }}>
-        <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm">
-          {/* Background decoration */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-primary/[0.06] blur-[80px]" />
-            <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-accent/[0.04] blur-[60px]" />
-          </div>
-
-          {/* Top gradient strip */}
-          <div className="h-24 sm:h-32 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/5 relative">
-            <div className="absolute inset-0 bg-dots opacity-20" />
+        <div className="relative overflow-hidden rounded-xl border border-border bg-card">
+          {/* Top strip */}
+          <div className="h-20 sm:h-24 bg-muted border-b border-border relative">
             {/* Admin crown badge */}
             {isAdmin && (
               <div className="absolute top-4 right-4 flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/25 px-3 py-1">
-                <Crown className="h-3 w-3 text-amber-400" />
-                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+                <Crown className="h-3 w-3 text-amber-500" />
+                <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">
                   Admin
                 </span>
               </div>
@@ -92,10 +85,10 @@ function Profile() {
           </div>
 
           {/* Profile content */}
-          <div className="relative z-10 px-6 pb-6">
-            {/* Avatar — overlapping the gradient strip */}
-            <div className="-mt-12 sm:-mt-14 mb-4 flex items-end gap-4">
-              <div className="relative flex h-20 w-20 sm:h-24 sm:w-24 shrink-0 items-center justify-center rounded-2xl bg-card border-4 border-background shadow-xl">
+          <div className="px-6 pb-6">
+            {/* Avatar — overlapping the top strip */}
+            <div className="-mt-10 sm:-mt-12 mb-4 flex items-end gap-4">
+              <div className="relative flex h-20 w-20 sm:h-24 sm:w-24 shrink-0 items-center justify-center rounded-xl bg-card border-4 border-background shadow-md">
                 <span className="text-xl sm:text-2xl font-bold text-muted-foreground">
                   {initials}
                 </span>
@@ -149,7 +142,7 @@ function Profile() {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3 mt-6 pt-6 border-t border-border/40">
+            <div className="flex items-center gap-3 mt-6 pt-6 border-t border-border">
               <Button
                 variant="outline"
                 className="gap-2 border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
@@ -262,15 +255,11 @@ function Profile() {
           BALANCE SECTION
           ================================================================ */}
       <div className="animate-slide-up" style={{ animationDelay: "240ms" }}>
-        <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card/40 backdrop-blur-sm p-6">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[200px] w-[200px] rounded-full bg-primary/[0.04] blur-[80px]" />
-          </div>
-
-          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="rounded-xl border border-border bg-card p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
-                <Wallet className="h-6 w-6" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted border border-border text-muted-foreground">
+                <Wallet className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-0.5">
@@ -328,7 +317,7 @@ function InfoRow({
   };
 
   return (
-    <div className="flex items-center justify-between rounded-xl bg-muted/20 border border-border/30 px-4 py-3">
+    <div className="flex items-center justify-between rounded-xl bg-muted/40 border border-border px-4 py-3">
       <div className="flex items-center gap-3">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground shrink-0">
           {icon}
@@ -371,7 +360,7 @@ function StatCard({
   variant?: "primary" | "win" | "loss";
 }) {
   return (
-    <div className="rounded-xl border border-border/40 bg-card/40 backdrop-blur-sm p-4 space-y-1.5">
+    <div className="rounded-xl border border-border bg-card p-4 space-y-1.5">
       <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground block">
         {label}
       </span>

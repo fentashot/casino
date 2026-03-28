@@ -5,70 +5,70 @@
 @tailwind utilities;
 
 /* ============================================================================
-   DESIGN TOKENS — Premium Dark Casino Theme
-   Palette: Deep blacks, charcoal surfaces, emerald accent, gold highlights
+   DESIGN TOKENS — Clean Natural Gray Casino Theme
+   Palette: Warm charcoal surfaces, natural grays, emerald accent, gold highlights
    ============================================================================ */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 160 6% 10%;
-    --card: 0 0% 98%;
-    --card-foreground: 160 6% 10%;
-    --popover: 0 0% 98%;
-    --popover-foreground: 160 6% 10%;
-    --primary: 160 84% 40%;
+    --background: 0 0% 99%;
+    --foreground: 0 0% 9%;
+    --card: 0 0% 97%;
+    --card-foreground: 0 0% 9%;
+    --popover: 0 0% 97%;
+    --popover-foreground: 0 0% 9%;
+    --primary: 160 84% 36%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 160 6% 94%;
-    --secondary-foreground: 160 6% 20%;
-    --muted: 160 6% 94%;
-    --muted-foreground: 160 4% 46%;
-    --accent: 43 96% 56%;
+    --secondary: 0 0% 93%;
+    --secondary-foreground: 0 0% 20%;
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 46%;
+    --accent: 43 96% 52%;
     --accent-foreground: 0 0% 5%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 160 6% 90%;
-    --input: 160 6% 90%;
-    --ring: 160 84% 40%;
-    --chart-1: 160 84% 40%;
-    --chart-2: 43 96% 56%;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 160 84% 36%;
+    --chart-1: 160 84% 36%;
+    --chart-2: 43 96% 52%;
     --chart-3: 200 70% 50%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     --radius: 0.625rem;
     --sidebar: 0 0% 96%;
-    --sidebar-foreground: 160 6% 10%;
-    --sidebar-border: 160 6% 90%;
+    --sidebar-foreground: 0 0% 9%;
+    --sidebar-border: 0 0% 88%;
   }
 
   .dark {
-    --background: 200 12% 5%;
-    --foreground: 60 5% 90%;
-    --card: 200 10% 7.5%;
-    --card-foreground: 60 5% 90%;
-    --popover: 200 10% 7.5%;
-    --popover-foreground: 60 5% 90%;
-    --primary: 160 84% 40%;
+    --background: 0 0% 5%;
+    --foreground: 0 0% 87%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 87%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 87%;
+    --primary: 158 55% 38%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 200 8% 12%;
-    --secondary-foreground: 60 5% 85%;
-    --muted: 200 8% 14%;
-    --muted-foreground: 200 5% 50%;
-    --accent: 43 96% 56%;
+    --secondary: 0 0% 11%;
+    --secondary-foreground: 0 0% 78%;
+    --muted: 0 0% 11%;
+    --muted-foreground: 0 0% 46%;
+    --accent: 43 80% 50%;
     --accent-foreground: 0 0% 5%;
-    --destructive: 0 72% 45%;
+    --destructive: 0 60% 44%;
     --destructive-foreground: 0 0% 100%;
-    --border: 200 8% 14%;
-    --input: 200 8% 14%;
-    --ring: 160 84% 40%;
-    --chart-1: 160 84% 40%;
-    --chart-2: 43 96% 56%;
-    --chart-3: 200 70% 50%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar: 200 12% 6%;
-    --sidebar-foreground: 60 5% 90%;
-    --sidebar-border: 200 8% 14%;
+    --border: 0 0% 13%;
+    --input: 0 0% 13%;
+    --ring: 158 55% 38%;
+    --chart-1: 158 55% 38%;
+    --chart-2: 43 80% 50%;
+    --chart-3: 200 60% 48%;
+    --chart-4: 280 55% 58%;
+    --chart-5: 340 65% 52%;
+    --sidebar: 0 0% 4%;
+    --sidebar-foreground: 0 0% 87%;
+    --sidebar-border: 0 0% 11%;
   }
 }
 
@@ -100,8 +100,8 @@
 
   /* Custom scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
 
   ::-webkit-scrollbar-track {
@@ -109,7 +109,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted));
+    background: hsl(var(--border));
     border-radius: 999px;
   }
 
@@ -119,13 +119,13 @@
 
   /* Selection color */
   ::selection {
-    background: hsl(160 84% 40% / 0.3);
+    background: hsl(160 72% 40% / 0.25);
     color: hsl(var(--foreground));
   }
 }
 
 /* ============================================================================
-   ROULETTE TABLE — Cell & Badge System
+   ROULETTE TABLE — Cell & Badge System (UNCHANGED)
    ============================================================================ */
 
 @layer base {
@@ -165,133 +165,93 @@
 }
 
 /* ============================================================================
-   COMPONENT UTILITIES — Glassmorphism, Gradients, Effects
+   COMPONENT UTILITIES — Clean flat surfaces, no glassmorphism
    ============================================================================ */
 
 @layer components {
-  /* Glass surfaces */
+  /* Flat card surface */
   .glass {
-    background: hsl(var(--card) / 0.6);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    border: 1px solid hsl(var(--border) / 0.5);
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
   }
 
   .glass-strong {
-    background: hsl(var(--card) / 0.8);
-    backdrop-filter: blur(24px) saturate(200%);
-    -webkit-backdrop-filter: blur(24px) saturate(200%);
-    border: 1px solid hsl(var(--border) / 0.6);
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
   }
 
   .glass-subtle {
-    background: hsl(var(--card) / 0.3);
-    backdrop-filter: blur(12px) saturate(150%);
-    -webkit-backdrop-filter: blur(12px) saturate(150%);
-    border: 1px solid hsl(var(--border) / 0.2);
+    background: hsl(var(--muted) / 0.5);
+    border: 1px solid hsl(var(--border) / 0.6);
   }
 
-  /* Glow effects */
+  /* Subtle shadow for primary elements */
   .glow-emerald {
-    box-shadow:
-      0 0 20px hsl(160 84% 40% / 0.15),
-      0 0 60px hsl(160 84% 40% / 0.05);
+    box-shadow: 0 0 0 1px hsl(160 72% 40% / 0.2);
   }
 
   .glow-gold {
-    box-shadow:
-      0 0 20px hsl(43 96% 56% / 0.15),
-      0 0 60px hsl(43 96% 56% / 0.05);
+    box-shadow: 0 0 0 1px hsl(43 90% 52% / 0.2);
   }
 
   .glow-emerald-strong {
-    box-shadow:
-      0 0 30px hsl(160 84% 40% / 0.25),
-      0 0 80px hsl(160 84% 40% / 0.1);
+    box-shadow: 0 0 0 2px hsl(160 72% 40% / 0.3);
   }
 
-  /* Gradient text */
+  /* Flat text — primary color, no gradient */
   .text-gradient-emerald {
-    background: linear-gradient(135deg, hsl(160 84% 50%), hsl(160 84% 35%));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: hsl(var(--primary));
   }
 
   .text-gradient-gold {
-    background: linear-gradient(135deg, hsl(43 96% 66%), hsl(43 96% 46%));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: hsl(var(--accent));
   }
 
   .text-gradient-premium {
-    background: linear-gradient(135deg, hsl(43 96% 66%), hsl(160 84% 50%));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: hsl(var(--foreground));
   }
 
-  /* Gradient backgrounds */
+  /* No gradient backgrounds — replaced with flat surface */
   .bg-gradient-radial {
-    background: radial-gradient(
-      ellipse at top,
-      hsl(160 84% 40% / 0.08) 0%,
-      transparent 60%
-    );
+    background: transparent;
   }
 
   .bg-gradient-mesh {
-    background:
-      radial-gradient(at 20% 20%, hsl(160 84% 40% / 0.06) 0%, transparent 50%),
-      radial-gradient(at 80% 80%, hsl(43 96% 56% / 0.04) 0%, transparent 50%),
-      radial-gradient(at 50% 50%, hsl(200 12% 5%) 0%, hsl(200 12% 5%) 100%);
+    background: hsl(var(--background));
   }
 
   .bg-gradient-surface {
-    background: linear-gradient(
-      180deg,
-      hsl(var(--card)) 0%,
-      hsl(var(--card) / 0.8) 100%
-    );
+    background: hsl(var(--card));
   }
 
-  /* Dot pattern overlay */
+  /* Subtle dot pattern */
   .bg-dots {
     background-image: radial-gradient(
-      hsl(var(--border) / 0.3) 1px,
+      hsl(var(--border) / 0.4) 1px,
       transparent 1px
     );
-    background-size: 24px 24px;
+    background-size: 20px 20px;
   }
 
-  /* Sidebar */
+  /* Sidebar — flat surface */
   .sidebar-gradient {
-    background: linear-gradient(
-      180deg,
-      hsl(var(--sidebar)) 0%,
-      hsl(200 12% 4%) 100%
-    );
+    background: hsl(var(--sidebar));
   }
 
-  /* Bottom nav */
+  /* Bottom nav — flat with border */
   .bottom-nav {
-    background: hsl(var(--background) / 0.85);
-    backdrop-filter: blur(20px) saturate(200%);
-    -webkit-backdrop-filter: blur(20px) saturate(200%);
-    border-top: 1px solid hsl(var(--border) / 0.5);
+    background: hsl(var(--background));
+    border-top: 1px solid hsl(var(--border));
   }
 
-  /* Card hover effect */
+  /* Card hover — clean lift */
   .card-hover {
-    @apply transition-all duration-300 ease-out;
+    @apply transition-all duration-200 ease-out;
   }
 
   .card-hover:hover {
-    transform: translateY(-2px);
-    box-shadow:
-      0 8px 30px hsl(0 0% 0% / 0.3),
-      0 0 1px hsl(var(--border) / 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px hsl(0 0% 0% / 0.12);
   }
 
   /* Chip button */
@@ -303,12 +263,11 @@
 
   .chip-active {
     @apply ring-2 ring-amber-400 ring-offset-2 ring-offset-background;
-    box-shadow: 0 0 12px hsl(43 96% 56% / 0.3);
   }
 
-  /* Balance badge */
+  /* Balance badge — flat surface */
   .balance-pill {
-    background: linear-gradient(135deg, hsl(200 10% 10%), hsl(200 10% 8%));
+    background: hsl(var(--muted));
     border: 1px solid hsl(var(--border));
   }
 
@@ -316,14 +275,12 @@
   .nav-indicator {
     @apply absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full;
     background: hsl(var(--primary));
-    box-shadow: 0 0 8px hsl(160 84% 40% / 0.4);
   }
 
   /* Mobile bottom nav indicator */
   .bottom-nav-indicator {
-    @apply absolute -top-px left-1/2 -translate-x-1/2 h-[2px] w-8 rounded-full;
+    @apply absolute -top-px left-1/2 -translate-x-1/2 h-[2px] w-6 rounded-full;
     background: hsl(var(--primary));
-    box-shadow: 0 0 8px hsl(160 84% 40% / 0.4);
   }
 }
 
@@ -339,7 +296,7 @@
 
   /* Subtle border for elevated surfaces */
   .border-subtle {
-    border-color: hsl(var(--border) / 0.5);
+    border-color: hsl(var(--border) / 0.6);
   }
 
   /* Fade edges for horizontal scroll containers */
@@ -360,7 +317,7 @@
     );
   }
 
-  /* Animated gradient for hero/loading */
+  /* Animated gradient for hero/loading — kept for shimmer usage */
   .animate-gradient {
     background-size: 200% 200%;
     animation: gradient-shift 8s ease infinite;
@@ -391,46 +348,30 @@
 
   /* Slide up entrance */
   .animate-slide-up {
-    animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
     opacity: 0;
   }
 
   /* Fade in */
   .animate-fade-in {
-    animation: fade-in 0.4s ease-out both;
+    animation: fade-in 0.3s ease-out both;
     opacity: 0;
   }
 
-  /* Stagger children helper (use with JS) */
+  /* Stagger children helper */
   .stagger-children > * {
-    animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
     opacity: 0;
   }
 
-  .stagger-children > *:nth-child(1) {
-    animation-delay: 0ms;
-  }
-  .stagger-children > *:nth-child(2) {
-    animation-delay: 60ms;
-  }
-  .stagger-children > *:nth-child(3) {
-    animation-delay: 120ms;
-  }
-  .stagger-children > *:nth-child(4) {
-    animation-delay: 180ms;
-  }
-  .stagger-children > *:nth-child(5) {
-    animation-delay: 240ms;
-  }
-  .stagger-children > *:nth-child(6) {
-    animation-delay: 300ms;
-  }
-  .stagger-children > *:nth-child(7) {
-    animation-delay: 360ms;
-  }
-  .stagger-children > *:nth-child(8) {
-    animation-delay: 420ms;
-  }
+  .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+  .stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+  .stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+  .stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+  .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+  .stagger-children > *:nth-child(7) { animation-delay: 300ms; }
+  .stagger-children > *:nth-child(8) { animation-delay: 350ms; }
 }
 
 /* ============================================================================
@@ -438,101 +379,49 @@
    ============================================================================ */
 
 @keyframes gradient-shift {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 @keyframes glow-pulse {
-  0%,
-  100% {
-    opacity: 1;
-    box-shadow:
-      0 0 20px hsl(160 84% 40% / 0.15),
-      0 0 60px hsl(160 84% 40% / 0.05);
-  }
-  50% {
-    opacity: 0.85;
-    box-shadow:
-      0 0 30px hsl(160 84% 40% / 0.25),
-      0 0 80px hsl(160 84% 40% / 0.1);
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 @keyframes slide-up {
-  0% {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fade-in {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 @keyframes number-pop {
-  0% {
-    opacity: 0;
-    transform: scale(0.7);
-  }
-  60% {
-    transform: scale(1.08);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  0% { opacity: 0; transform: scale(0.7); }
+  60% { transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 @keyframes slide-in-right {
-  0% {
-    opacity: 0;
-    transform: translateX(16px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  0% { opacity: 0; transform: translateX(16px); }
+  100% { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes card-deal {
-  0% {
-    opacity: 0;
-    transform: translateY(-24px) rotate(-6deg) scale(0.85);
-  }
-  60% {
-    transform: translateY(4px) rotate(1deg) scale(1.02);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) rotate(0deg) scale(1);
-  }
+  0% { opacity: 0; transform: translateY(-24px) rotate(-6deg) scale(0.85); }
+  60% { transform: translateY(4px) rotate(1deg) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 /* ============================================================================
-   SPECIAL: Loading shimmer for skeletons
+   Loading shimmer for skeletons
    ============================================================================ */
 
 @layer utilities {

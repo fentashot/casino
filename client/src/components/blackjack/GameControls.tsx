@@ -59,7 +59,7 @@ export function GameControls({
 
   return (
     <div
-      className="rounded-2xl border border-border/40 bg-card/40 backdrop-blur-sm overflow-hidden"
+      className="rounded-2xl border border-border bg-card overflow-hidden"
       style={{ height: CONTROLS_HEIGHT }}
     >
       {/* ── BETTING ────────────────────────────────────────────────────── */}

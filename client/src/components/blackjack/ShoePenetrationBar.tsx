@@ -11,7 +11,7 @@ export function ShoePenetrationBar({ penetration }: ShoePenetrationBarProps) {
   const warn = pct >= 75;
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border/20 bg-card/20 px-4 py-2.5">
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5">
       <DatabaseZap
         className={cn(
           "h-3.5 w-3.5 shrink-0",

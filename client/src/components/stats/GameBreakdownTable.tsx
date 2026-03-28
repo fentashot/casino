@@ -46,10 +46,10 @@ export function GameBreakdownTable({ games }: GameBreakdownTableProps) {
 function GameRow({ entry }: { entry: GameBreakdownEntry }) {
   const profitPositive = entry.profit >= 0;
   const iconClass =
-    GAME_COLOR[entry.game] ?? "bg-muted/50 text-muted-foreground border-border/30";
+    GAME_COLOR[entry.game] ?? "bg-muted text-muted-foreground border-border";
 
   return (
-    <div className="rounded-xl border border-border/30 bg-card/30 p-4 transition-colors hover:bg-card/50">
+    <div className="rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/30">
       {/* Header row: icon + name + win-rate badge */}
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">

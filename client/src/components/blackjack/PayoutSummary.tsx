@@ -45,7 +45,7 @@ export function PayoutSummary({ hands }: PayoutSummaryProps) {
   const totalProfit = totalPayout - totalBet;
 
   return (
-    <div className="w-full max-w-sm rounded-xl border border-border/40 bg-card/40 backdrop-blur-sm overflow-hidden">
+    <div className="w-full max-w-sm rounded-xl border border-border bg-card overflow-hidden">
       {rows.map((row) => (
         <div
           key={row.index}

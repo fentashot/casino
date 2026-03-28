@@ -73,7 +73,7 @@ export default function RegisterForm() {
         Back to home
       </Link>
 
-      <Card className="border-border/50 bg-card/80 backdrop-blur-xl shadow-2xl shadow-black/20">
+      <Card className="border-border bg-card shadow-sm">
         <CardHeader className="pb-4 space-y-2">
           <CardTitle className="text-2xl font-bold tracking-tight">
             Create your account
@@ -197,7 +197,7 @@ export default function RegisterForm() {
               className={cn(
                 "w-full h-11 text-sm font-semibold transition-all mt-2",
                 "bg-primary hover:bg-primary/90 text-primary-foreground",
-                "glow-emerald hover:glow-emerald-strong",
+                "",
               )}
               disabled={loading}
             >

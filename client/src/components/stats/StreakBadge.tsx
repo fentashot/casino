@@ -33,7 +33,7 @@ export function StreakBadge({
             ? "border-emerald-500/25 bg-emerald-500/8"
             : isLoss
               ? "border-red-500/25 bg-red-500/8"
-              : "border-border/30 bg-muted/20",
+              : "border-border bg-muted/30",
         )}
       >
         {/* Icon */}
@@ -160,7 +160,7 @@ function RecordTile({
   variant: "win" | "loss";
 }) {
   return (
-    <div className="flex flex-col gap-1 rounded-lg border border-border/30 bg-muted/10 px-3 py-2.5">
+    <div className="flex flex-col gap-1 rounded-lg border border-border bg-muted/20 px-3 py-2.5">
       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </span>

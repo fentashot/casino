@@ -43,7 +43,7 @@ function RoundRow({ round }: { round: RecentRound }) {
   const push = round.profit === 0;
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border/30 bg-card/30 px-3 py-2.5 transition-colors hover:bg-card/50">
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 transition-colors hover:bg-muted/30">
       {/* Left badge — differs per game */}
       {round.game === "Blackjack" ? (
         <BlackjackBadge handResults={round.handResults} />
@@ -134,7 +134,7 @@ function BlackjackBadge({ handResults }: { handResults: string[] }) {
             ? "bg-emerald-500/15 border border-emerald-400/30 text-emerald-400"
             : allLoss
               ? "bg-red-500/15 border border-red-400/30 text-red-400"
-              : "bg-muted/50 border border-border/40 text-muted-foreground",
+              : "bg-muted border border-border text-muted-foreground",
       )}
     >
       BJ
@@ -173,7 +173,7 @@ function HandResultsPill({ results }: { results: string[] }) {
           className={cn(
             "inline-flex items-center justify-center h-5 w-5 rounded text-[9px] font-bold border",
             RESULT_CLASS[r] ??
-              "bg-muted/40 text-muted-foreground border-border/30",
+              "bg-muted text-muted-foreground border-border",
           )}
         >
           {RESULT_LABEL[r] ?? "?"}

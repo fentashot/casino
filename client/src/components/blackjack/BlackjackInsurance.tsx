@@ -31,8 +31,7 @@ export function BlackjackInsurance({
       className={cn(
         "relative w-full max-w-sm rounded-2xl overflow-hidden",
         "border border-amber-500/40",
-        "bg-gradient-to-b from-amber-950/60 to-zinc-900/80",
-        "backdrop-blur-sm",
+        "bg-card",
       )}
     >
       <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-amber-400/10 pointer-events-none" />

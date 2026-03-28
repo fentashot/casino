@@ -30,7 +30,7 @@ export function PeriodSelector<T extends string | number>({
   onChange,
 }: PeriodSelectorProps<T>) {
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-border/40 bg-muted/30 p-0.5">
+    <div className="flex items-center gap-1 rounded-lg border border-border bg-muted p-0.5">
       {options.map((opt) => (
         <button
           key={String(opt.value)}
@@ -39,7 +39,7 @@ export function PeriodSelector<T extends string | number>({
           className={cn(
             "rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all duration-150",
             value === opt.value
-              ? "bg-card text-foreground shadow-sm border border-border/40"
+              ? "bg-card text-foreground shadow-sm border border-border"
               : "text-muted-foreground hover:text-foreground",
           )}
         >
@@ -91,7 +91,7 @@ export function ChartSection({
   return (
     <section
       className={cn(
-        "flex flex-col gap-4 rounded-2xl border border-border/40 bg-card/40 backdrop-blur-sm p-5 sm:p-6",
+        "flex flex-col gap-4 rounded-xl border border-border bg-card p-5 sm:p-6",
         className,
       )}
     >

@@ -21,7 +21,7 @@ export function ResultBanner({ variant, label }: ResultBannerProps) {
   return (
     <div
       className={cn(
-        "rounded-2xl border px-8 py-2.5 shadow-lg backdrop-blur-sm",
+        "rounded-2xl border px-8 py-2.5 shadow-sm",
         "text-xl sm:text-2xl font-bold tracking-tight text-center",
         "animate-number-pop",
         STYLES[variant],

@@ -79,15 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   if (isLoading) {
     return (
       <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background">
-        {/* Ambient background */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[60vh] w-[60vh] rounded-full bg-primary/[0.04] blur-[120px]" />
-        </div>
-
         {/* Logo + spinner */}
-        <div className="relative z-10 flex flex-col items-center gap-6 animate-fade-in">
-          {/* Icon with glow */}
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20 glow-emerald animate-pulse-glow">
+        <div className="flex flex-col items-center gap-6 animate-fade-in">
+          {/* Icon */}
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
             <Sparkles className="h-8 w-8 text-primary" />
           </div>
 

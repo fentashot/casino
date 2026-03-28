@@ -50,8 +50,8 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 rounded-xl border border-border/40 bg-card/40 backdrop-blur-sm p-4",
-        "transition-colors duration-200 hover:bg-card/60",
+        "flex flex-col gap-3 rounded-xl border border-border bg-card p-4",
+        "transition-colors duration-200 hover:bg-muted/30",
         className,
       )}
     >

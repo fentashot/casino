@@ -63,10 +63,7 @@ export function BalanceDisplay({
         className,
       )}
     >
-      {/* Subtle ambient glow */}
-      <div className="absolute -top-8 -right-8 h-24 w-24 rounded-full bg-primary/[0.06] blur-[30px] pointer-events-none" />
-
-      <div className="relative z-10 flex items-center gap-3">
+      <div className="flex items-center gap-3">
         {/* Icon container */}
         <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
           <Wallet className="h-5 w-5 text-primary" />

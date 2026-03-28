@@ -134,9 +134,9 @@ function SummaryTile({
   return (
     <div
       className={cn(
-        "relative flex flex-col gap-3 rounded-xl border border-border/40 bg-card/40 backdrop-blur-sm p-4",
+        "relative flex flex-col gap-3 rounded-xl border border-border bg-card p-4",
         "transition-all duration-200",
-        "group-hover:bg-card/60 group-hover:border-primary/20",
+        "group-hover:bg-muted/30 group-hover:border-primary/30",
       )}
     >
       {/* Icon + label */}

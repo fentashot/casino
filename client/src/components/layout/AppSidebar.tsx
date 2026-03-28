@@ -19,31 +19,11 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 const NAV_ITEMS = [
-  {
-    label: "Games",
-    to: "/games" as const,
-    icon: LayoutGrid,
-  },
-  {
-    label: "Roulette",
-    to: "/games/roulette" as const,
-    icon: Dices,
-  },
-  {
-    label: "Blackjack",
-    to: "/games/blackjack" as const,
-    icon: Spade,
-  },
-  {
-    label: "Statystyki",
-    to: "/games/stats" as const,
-    icon: BarChart3,
-  },
-  {
-    label: "Profile",
-    to: "/profile" as const,
-    icon: User,
-  },
+  { label: "Games", to: "/games" as const, icon: LayoutGrid },
+  { label: "Roulette", to: "/games/roulette" as const, icon: Dices },
+  { label: "Blackjack", to: "/games/blackjack" as const, icon: Spade },
+  { label: "Statystyki", to: "/games/stats" as const, icon: BarChart3 },
+  { label: "Profile", to: "/profile" as const, icon: User },
 ] as const;
 
 export function AppSidebar() {
@@ -51,55 +31,49 @@ export function AppSidebar() {
   const matchRoute = useMatchRoute();
   const [collapsed, setCollapsed] = useState(false);
 
-  // Subscribe to balance updates from React Query cache (updated by games)
-  // queryFn is omitted so it won't refetch — only observes cache invalidations
-  // staleTime is infinite so query never auto-refetches, minimizing server load
   const { data: balanceData } = useQuery({
     queryKey: ["casino-balance"],
     queryFn: async () => ({ balance: user?.balance ?? 0 }),
-    staleTime: Infinity, // Never auto-refetch, games update cache directly
-    gcTime: Infinity, // Never garbage collect
-    enabled: !!user, // Only enable when user exists
+    staleTime: Infinity,
+    gcTime: Infinity,
+    enabled: !!user,
   });
 
-  // Use cached balance if available, fall back to user.balance from auth
   const displayBalance = balanceData?.balance ?? user?.balance ?? 0;
 
   const isActive = (to: string) => {
-    if (to === "/games") {
-      return !!matchRoute({ to: "/games", fuzzy: false });
-    }
+    if (to === "/games") return !!matchRoute({ to: "/games", fuzzy: false });
     return !!matchRoute({ to, fuzzy: true });
   };
 
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-dvh flex-col hidden lg:flex transition-all duration-300 ease-out",
+        "fixed left-0 top-0 z-40 h-dvh flex-col hidden lg:flex transition-all duration-300 ease-out border-r border-sidebar-border",
         collapsed ? "w-sidebar-collapsed" : "w-sidebar",
       )}
     >
       {/* Background */}
-      <div className="absolute inset-0 sidebar-gradient border-r border-sidebar-border" />
+      <div className="absolute inset-0 bg-sidebar" />
 
       {/* Content */}
       <div className="relative z-10 flex h-full flex-col">
         {/* Logo */}
         <div
           className={cn(
-            "flex items-center gap-3 px-5 h-16 shrink-0",
+            "flex items-center gap-3 px-5 h-14 shrink-0",
             collapsed && "justify-center px-0",
           )}
         >
-          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 glow-emerald">
-            <Sparkles className="h-5 w-5 text-primary" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 border border-primary/20">
+            <Sparkles className="h-4 w-4 text-primary" />
           </div>
           {!collapsed && (
             <div className="flex flex-col animate-fade-in">
               <span className="text-sm font-bold tracking-tight text-foreground">
                 NEXUS
               </span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
                 Casino
               </span>
             </div>
@@ -107,14 +81,14 @@ export function AppSidebar() {
         </div>
 
         {/* Divider */}
-        <div className="mx-4 h-px bg-sidebar-border" />
+        <div className="mx-0 h-px bg-sidebar-border" />
 
         {/* Balance Widget */}
         {user && (
-          <div className={cn("px-3 py-4", collapsed && "px-2")}>
+          <div className={cn("px-3 py-3", collapsed && "px-2")}>
             <div
               className={cn(
-                "balance-pill rounded-xl p-3 transition-all duration-200",
+                "balance-pill rounded-lg p-3 transition-all duration-200",
                 collapsed && "p-2 flex items-center justify-center",
               )}
             >
@@ -127,14 +101,14 @@ export function AppSidebar() {
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse-glow" />
-                    <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Balance
                     </span>
                   </div>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-xl font-bold font-mono tracking-tight text-foreground">
+                    <span className="text-lg font-bold font-mono tracking-tight text-foreground">
                       {formatBalance(displayBalance)}
                     </span>
                     <span className="text-xs font-medium text-muted-foreground">
@@ -148,7 +122,7 @@ export function AppSidebar() {
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto pt-1">
           {NAV_ITEMS.map((item) => {
             const active = isActive(item.to);
             const Icon = item.icon;
@@ -158,11 +132,11 @@ export function AppSidebar() {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                  "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
                   collapsed && "justify-center px-0 py-3",
                   active
                     ? "text-primary bg-primary/8"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
                 )}
               >
                 {/* Active indicator bar */}
@@ -170,10 +144,8 @@ export function AppSidebar() {
 
                 <Icon
                   className={cn(
-                    "h-[18px] w-[18px] shrink-0 transition-colors duration-200",
-                    active
-                      ? "text-primary"
-                      : "text-muted-foreground group-hover:text-foreground",
+                    "h-[18px] w-[18px] shrink-0 transition-colors duration-150",
+                    active ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
                   )}
                 />
 
@@ -187,20 +159,18 @@ export function AppSidebar() {
           {/* Admin link */}
           {user?.role === "admin" && (
             <>
-              <div className="mx-2 my-3 h-px bg-sidebar-border" />
+              <div className="mx-2 my-2 h-px bg-sidebar-border" />
               <Link
                 to="/profile"
                 className={cn(
-                  "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                  "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                  "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
+                  "text-muted-foreground hover:text-foreground hover:bg-muted/60",
                   collapsed && "justify-center px-0 py-3",
                 )}
               >
                 <Shield className="h-[18px] w-[18px] shrink-0 text-amber-500" />
                 {!collapsed && (
-                  <span className="animate-fade-in text-amber-500/80">
-                    Admin
-                  </span>
+                  <span className="animate-fade-in text-amber-500">Admin</span>
                 )}
               </Link>
             </>
@@ -218,7 +188,7 @@ export function AppSidebar() {
               )}
             >
               {/* Avatar */}
-              <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
+              <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted border border-border">
                 <span className="text-xs font-semibold text-muted-foreground">
                   {user.name
                     .split(" ")

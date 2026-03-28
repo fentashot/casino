@@ -115,12 +115,7 @@ function Roulette() {
         content inside them animates in/out. This ensures zero layout shift.
       */}
       <div className="animate-slide-up" style={{ animationDelay: "40ms" }}>
-        <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card/40 backdrop-blur-sm py-8">
-          {/* Ambient background glow */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[400px] w-[400px] rounded-full bg-primary/[0.04] blur-[100px]" />
-          </div>
-
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-card py-8">
           {/* "Spinning" pill — always in DOM, animated with CSS opacity/translate */}
           <div
             className={cn(
@@ -496,7 +491,7 @@ function CollapsiblePanel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden">
+    <div className="rounded-2xl border border-border bg-card overflow-hidden">
       <Button
         variant="ghost"
         onClick={onToggle}

@@ -136,7 +136,7 @@ export function BlackjackBetControls({
         <div
           className={cn(
             "flex items-center gap-2 rounded-2xl border px-4 py-2.5",
-            "bg-card/60 border-border/50 backdrop-blur-sm",
+            "bg-card border-border",
             "min-w-[140px] justify-center",
           )}
         >
