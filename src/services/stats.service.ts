@@ -4,7 +4,7 @@
 
 import { type Result, ok } from "../lib/errors";
 import * as StatsRepo from "../repositories/stats.repository";
-import type { RoundRecord } from "../repositories/stats.repository";
+import type { RoundRecord, RecentPlinkoRecord } from "../repositories/stats.repository";
 
 // Types
 
@@ -24,6 +24,7 @@ export interface OverviewResult {
   roiPct: number;
   rouletteRounds: number;
   blackjackRounds: number;
+  plinkoRounds: number;
 }
 
 export interface BalanceHistoryPoint {
@@ -31,7 +32,7 @@ export interface BalanceHistoryPoint {
   balance: number;
   date: Date;
   won: boolean;
-  game: "Roulette" | "Blackjack";
+  game: "Roulette" | "Blackjack" | "Plinko";
 }
 
 export interface DailySeriesPoint {
@@ -62,7 +63,7 @@ export interface GameBreakdownEntry {
 
 export interface RecentRound {
   id: string;
-  game: "Roulette" | "Blackjack";
+  game: "Roulette" | "Blackjack" | "Plinko";
   number: number;
   color: string;
   bet: number;
@@ -90,6 +91,7 @@ const EMPTY_OVERVIEW: OverviewResult = {
   roiPct: 0,
   rouletteRounds: 0,
   blackjackRounds: 0,
+  plinkoRounds: 0,
 };
 
 // Compute lifetime overview stats from raw round data.
@@ -97,18 +99,23 @@ const EMPTY_OVERVIEW: OverviewResult = {
 export function computeOverview(
   spins: RoundRecord[],
   bjRounds: RoundRecord[],
+  plinkoRounds: RoundRecord[] = [],
 ): OverviewResult {
   // Normalize and de-duplicate rounds coming from both sources. In some
   // edge-cases the same round can be returned twice (e.g. duplicate DB
   // rows or an upstream bug). Dedupe by timestamp+bet+win which is a very
   // low risk heuristic and prevents double-counting in the aggregates.
-  const enrich = (r: RoundRecord, game: "Roulette" | "Blackjack") => ({
+  const enrich = (r: RoundRecord, game: "Roulette" | "Blackjack" | "Plinko") => ({
     ...r,
     game,
     key: `${r.createdAt.getTime()}|${r.totalBet}|${r.totalWin}`,
   });
 
-  const merged = [...spins.map((s) => enrich(s, "Roulette")), ...bjRounds.map((r) => enrich(r, "Blackjack"))];
+  const merged = [
+    ...spins.map((s) => enrich(s, "Roulette")),
+    ...bjRounds.map((r) => enrich(r, "Blackjack")),
+    ...plinkoRounds.map((r) => enrich(r, "Plinko")),
+  ];
 
   const seen = new Set<string>();
   const all = merged
@@ -179,6 +186,7 @@ export function computeOverview(
     roiPct: totalWagered > 0 ? Math.round((netProfit / totalWagered) * 10000) / 100 : 0,
     rouletteRounds: spins.length,
     blackjackRounds: bjRounds.length,
+    plinkoRounds: plinkoRounds.length,
   };
 }
 
@@ -190,15 +198,20 @@ export function computeBalanceHistory(
   spins: RoundRecord[],
   bjRounds: RoundRecord[],
   limit: number,
+  plinkoRounds: RoundRecord[] = [],
 ): BalanceHistoryPoint[] {
   // Enrich rounds with a game tag and dedupe same-timestamp+bet+win duplicates
-  const enrich = (r: RoundRecord, game: "Roulette" | "Blackjack") => ({
+  const enrich = (r: RoundRecord, game: "Roulette" | "Blackjack" | "Plinko") => ({
     ...r,
     game,
     key: `${r.createdAt.getTime()}|${r.totalBet}|${r.totalWin}`,
   });
 
-  const merged = [...spins.map((s) => enrich(s, "Roulette")), ...bjRounds.map((r) => enrich(r, "Blackjack"))];
+  const merged = [
+    ...spins.map((s) => enrich(s, "Roulette")),
+    ...bjRounds.map((r) => enrich(r, "Blackjack")),
+    ...plinkoRounds.map((r) => enrich(r, "Plinko")),
+  ];
   const seen = new Set<string>();
   const ordered = merged
     .filter((r) => {
@@ -219,7 +232,7 @@ export function computeBalanceHistory(
       balance: round2(running),
       date: round.createdAt,
       won: win > 0,
-      game: round.game as "Roulette" | "Blackjack",
+      game: round.game,
     };
   });
 }
@@ -232,6 +245,7 @@ export function computeDailySeries(
   spins: RoundRecord[],
   bjRounds: RoundRecord[],
   days: number,
+  plinkoRounds: RoundRecord[] = [],
 ): DailySeriesPoint[] {
   type DayBucket = { wagered: number; won: number; rounds: number; wins: number };
   const byDay = new Map<string, DayBucket>();
@@ -248,6 +262,7 @@ export function computeDailySeries(
 
   for (const s of spins) addToBucket(s.createdAt, s.totalBet, s.totalWin);
   for (const r of bjRounds) addToBucket(r.createdAt, r.totalBet, r.totalWin);
+  for (const r of plinkoRounds) addToBucket(r.createdAt, r.totalBet, r.totalWin);
 
   const series: DailySeriesPoint[] = [];
   for (let i = days - 1; i >= 0; i--) {
@@ -276,6 +291,7 @@ export function computeDailySeries(
 export function computeHourlyHeatmap(
   spins: RoundRecord[],
   bjRounds: RoundRecord[],
+  plinkoRounds: RoundRecord[] = [],
 ): HourlySeriesPoint[] {
   const hours = Array.from({ length: 24 }, (_, h) => ({
     hour: h,
@@ -295,6 +311,7 @@ export function computeHourlyHeatmap(
 
   for (const s of spins) addToHour(s.createdAt, s.totalBet, s.totalWin);
   for (const r of bjRounds) addToHour(r.createdAt, r.totalBet, r.totalWin);
+  for (const r of plinkoRounds) addToHour(r.createdAt, r.totalBet, r.totalWin);
 
   return hours.map((h) => ({
     hour: h.hour,
@@ -312,6 +329,7 @@ export function computeHourlyHeatmap(
 export function computeGameBreakdown(
   spins: StatsRepo.BetWinRecord[],
   bjRounds: StatsRepo.BetWinRecord[],
+  plinkoRounds: StatsRepo.BetWinRecord[] = [],
 ): GameBreakdownEntry[] {
   const summarise = (
     rounds: StatsRepo.BetWinRecord[],
@@ -338,6 +356,7 @@ export function computeGameBreakdown(
   return [
     summarise(spins, "Roulette"),
     summarise(bjRounds, "Blackjack"),
+    summarise(plinkoRounds, "Plinko"),
   ].filter((g) => g.rounds > 0);
 }
 
@@ -349,6 +368,7 @@ export function buildRecentRounds(
   spins: StatsRepo.RecentSpinRecord[],
   bjRounds: StatsRepo.RecentBlackjackRecord[],
   limit: number,
+  plinkoRounds: RecentPlinkoRecord[] = [],
 ): RecentRound[] {
   const rouletteRounds: RecentRound[] = spins.map((s) => ({
     id: s.id,
@@ -377,7 +397,19 @@ export function buildRecentRounds(
     };
   });
 
-  return [...rouletteRounds, ...blackjackResults]
+  const plinkoResults: RecentRound[] = plinkoRounds.map((r) => ({
+    id: r.id,
+    game: "Plinko",
+    number: r.finalBucket,
+    color: "plinko",
+    bet: Number(r.bet),
+    win: Number(r.totalWin),
+    profit: Number(r.totalWin) - Number(r.bet),
+    handResults: [`${r.multiplier}x`],
+    createdAt: r.createdAt.toISOString(),
+  }));
+
+  return [...rouletteRounds, ...blackjackResults, ...plinkoResults]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, limit);
 }
@@ -387,55 +419,67 @@ export function buildRecentRounds(
    ============================================================================ */
 
 export async function getOverview(userId: string): Promise<Result<OverviewResult>> {
-  const { spins, bjRounds } = await StatsRepo.findAllRounds(userId);
-  return ok(computeOverview(spins, bjRounds));
+  const [{ spins, bjRounds }, plinkoRounds] = await Promise.all([
+    StatsRepo.findAllRounds(userId),
+    StatsRepo.findPlinkoRounds(userId),
+  ]);
+  return ok(computeOverview(spins, bjRounds, plinkoRounds));
 }
 
 export async function getBalanceHistory(
   userId: string,
   limit: number,
 ): Promise<Result<{ series: BalanceHistoryPoint[] }>> {
-  const { spins, bjRounds } = await StatsRepo.findAllRounds(userId);
-  return ok({ series: computeBalanceHistory(spins, bjRounds, limit) });
+  const [{ spins, bjRounds }, plinkoRounds] = await Promise.all([
+    StatsRepo.findAllRounds(userId),
+    StatsRepo.findPlinkoRounds(userId),
+  ]);
+  return ok({ series: computeBalanceHistory(spins, bjRounds, limit, plinkoRounds) });
 }
 
 export async function getDaily(
   userId: string,
   days: number,
 ): Promise<Result<{ series: DailySeriesPoint[] }>> {
-  const { spins, bjRounds } = await StatsRepo.findAllRounds(userId);
-  return ok({ series: computeDailySeries(spins, bjRounds, days) });
+  const [{ spins, bjRounds }, plinkoRounds] = await Promise.all([
+    StatsRepo.findAllRounds(userId),
+    StatsRepo.findPlinkoRounds(userId),
+  ]);
+  return ok({ series: computeDailySeries(spins, bjRounds, days, plinkoRounds) });
 }
 
 export async function getHourlyHeatmap(
   userId: string,
 ): Promise<Result<{ series: HourlySeriesPoint[] }>> {
-  const [spins, bjRounds] = await Promise.all([
+  const [spins, bjRounds, plinkoRounds] = await Promise.all([
     StatsRepo.findRouletteRoundsUnordered(userId),
     StatsRepo.findBlackjackRoundsUnordered(userId),
+    StatsRepo.findPlinkoRoundsUnordered(userId),
   ]);
-  return ok({ series: computeHourlyHeatmap(spins, bjRounds) });
+  return ok({ series: computeHourlyHeatmap(spins, bjRounds, plinkoRounds) });
 }
 
 export async function getGameBreakdown(
   userId: string,
 ): Promise<Result<{ games: GameBreakdownEntry[] }>> {
-  const [spins, bjRounds] = await Promise.all([
+  const [spins, bjRounds, plinkoRounds] = await Promise.all([
     StatsRepo.findRouletteBetWins(userId),
     StatsRepo.findBlackjackBetWins(userId),
+    StatsRepo.findPlinkoBetWins(userId),
   ]);
-  return ok({ games: computeGameBreakdown(spins, bjRounds) });
+  return ok({ games: computeGameBreakdown(spins, bjRounds, plinkoRounds) });
 }
 
 export async function getRecent(
   userId: string,
   limit: number,
 ): Promise<Result<{ rounds: RecentRound[] }>> {
-  const [spins, bjRounds] = await Promise.all([
+  const [spins, bjRounds, plinkoRounds] = await Promise.all([
     StatsRepo.findRecentSpins(userId, limit),
     StatsRepo.findRecentBlackjackRounds(userId, limit),
+    StatsRepo.findRecentPlinkoRounds(userId, limit),
   ]);
-  return ok({ rounds: buildRecentRounds(spins, bjRounds, limit) });
+  return ok({ rounds: buildRecentRounds(spins, bjRounds, limit, plinkoRounds) });
 }
 
 /* ============================================================================

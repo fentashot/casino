@@ -5,20 +5,20 @@
    ============================================================================ */
 
 import type {
-  StatsOverview,
-  BalanceHistoryResponse,
-  DailyResponse,
-  HourlyHeatmapResponse,
-  GameBreakdownResponse,
-  RecentResponse,
+	BalanceHistoryResponse,
+	DailyResponse,
+	GameBreakdownResponse,
+	HourlyHeatmapResponse,
+	RecentResponse,
+	StatsOverview,
 } from "./types";
 
 const BASE = "/api/stats";
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { credentials: "include" });
-  if (!res.ok) throw new Error(`GET ${BASE}${path} failed: ${res.status}`);
-  return res.json() as Promise<T>;
+	const res = await fetch(`${BASE}${path}`, { credentials: "include" });
+	if (!res.ok) throw new Error(`GET ${BASE}${path} failed: ${res.status}`);
+	return res.json() as Promise<T>;
 }
 
 /* ============================================================================
@@ -27,7 +27,7 @@ async function get<T>(path: string): Promise<T> {
 
 /** Lifetime aggregate numbers (win rate, profit, streaks, ROI…) */
 export async function fetchOverview(): Promise<StatsOverview> {
-  return get<StatsOverview>("/overview");
+	return get<StatsOverview>("/overview");
 }
 
 /**
@@ -35,9 +35,9 @@ export async function fetchOverview(): Promise<StatsOverview> {
  * Default: 200 rounds, max: 1000.
  */
 export async function fetchBalanceHistory(
-  limit = 200,
+	limit = 200,
 ): Promise<BalanceHistoryResponse> {
-  return get<BalanceHistoryResponse>(`/balance-history?limit=${limit}`);
+	return get<BalanceHistoryResponse>(`/balance-history?limit=${limit}`);
 }
 
 /**
@@ -45,17 +45,17 @@ export async function fetchBalanceHistory(
  * Default: 30 days, max: 365.
  */
 export async function fetchDaily(days = 30): Promise<DailyResponse> {
-  return get<DailyResponse>(`/daily?days=${days}`);
+	return get<DailyResponse>(`/daily?days=${days}`);
 }
 
 /** Hour-of-day activity heatmap (0–23, all-time). */
 export async function fetchHourlyHeatmap(): Promise<HourlyHeatmapResponse> {
-  return get<HourlyHeatmapResponse>("/hourly-heatmap");
+	return get<HourlyHeatmapResponse>("/hourly-heatmap");
 }
 
 /** Per-game-type summary (rounds, wagered, won, profit, win rate). */
 export async function fetchGameBreakdown(): Promise<GameBreakdownResponse> {
-  return get<GameBreakdownResponse>("/game-breakdown");
+	return get<GameBreakdownResponse>("/game-breakdown");
 }
 
 /**
@@ -63,5 +63,5 @@ export async function fetchGameBreakdown(): Promise<GameBreakdownResponse> {
  * Default: 20, max: 100.
  */
 export async function fetchRecent(limit = 20): Promise<RecentResponse> {
-  return get<RecentResponse>(`/recent?limit=${limit}`);
+	return get<RecentResponse>(`/recent?limit=${limit}`);
 }

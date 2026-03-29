@@ -6,7 +6,7 @@
    ============================================================================ */
 
 import { db } from "../db/postgres";
-import { casinoSpin, blackjackRound } from "../db/schema";
+import { casinoSpin, blackjackRound, plinkoRound } from "../db/schema";
 import { eq, asc, desc } from "drizzle-orm";
 
 /* ============================================================================
@@ -33,6 +33,16 @@ export interface RecentBlackjackRecord {
   totalBet: string;
   totalWin: string;
   handsSnapshot: unknown;
+  createdAt: Date;
+}
+
+export interface RecentPlinkoRecord {
+  id: string;
+  bet: string;
+  totalWin: string;
+  multiplier: string;
+  finalBucket: number;
+  difficulty: string;
   createdAt: Date;
 }
 
@@ -173,4 +183,68 @@ export async function findBlackjackRoundsUnordered(
     where: eq(blackjackRound.userId, userId),
     columns: { totalBet: true, totalWin: true, createdAt: true },
   });
+}
+
+/**
+ * Fetch all plinko rounds for a user, ordered by creation time (ascending).
+ * Maps `bet` → `totalBet` so it satisfies the shared RoundRecord interface.
+ */
+export async function findPlinkoRounds(
+  userId: string,
+): Promise<RoundRecord[]> {
+  const rows = await db.query.plinkoRound.findMany({
+    where: eq(plinkoRound.userId, userId),
+    columns: { bet: true, totalWin: true, createdAt: true },
+    orderBy: asc(plinkoRound.createdAt),
+  });
+  return rows.map((r) => ({ totalBet: r.bet, totalWin: r.totalWin, createdAt: r.createdAt }));
+}
+
+/**
+ * Fetch recent plinko rounds (newest first).
+ */
+export async function findRecentPlinkoRounds(
+  userId: string,
+  limit: number,
+): Promise<RecentPlinkoRecord[]> {
+  return db.query.plinkoRound.findMany({
+    where: eq(plinkoRound.userId, userId),
+    orderBy: desc(plinkoRound.createdAt),
+    limit,
+    columns: {
+      id: true,
+      bet: true,
+      totalWin: true,
+      multiplier: true,
+      finalBucket: true,
+      difficulty: true,
+      createdAt: true,
+    },
+  });
+}
+
+/**
+ * Fetch plinko bet/win totals only.
+ */
+export async function findPlinkoBetWins(
+  userId: string,
+): Promise<BetWinRecord[]> {
+  const rows = await db.query.plinkoRound.findMany({
+    where: eq(plinkoRound.userId, userId),
+    columns: { bet: true, totalWin: true },
+  });
+  return rows.map((r) => ({ totalBet: r.bet, totalWin: r.totalWin }));
+}
+
+/**
+ * Fetch plinko rounds with timestamps (no ordering constraint).
+ */
+export async function findPlinkoRoundsUnordered(
+  userId: string,
+): Promise<RoundRecord[]> {
+  const rows = await db.query.plinkoRound.findMany({
+    where: eq(plinkoRound.userId, userId),
+    columns: { bet: true, totalWin: true, createdAt: true },
+  });
+  return rows.map((r) => ({ totalBet: r.bet, totalWin: r.totalWin, createdAt: r.createdAt }));
 }

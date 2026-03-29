@@ -3,42 +3,39 @@
    Single barrel export for all blackjack-related client code.
    ============================================================================ */
 
-// Types
-export type {
-  Suit,
-  Rank,
-  CardData,
-  HandResult,
-  Hand,
-  GamePhase,
-  BlackjackGameState,
-  BlackjackAction,
-  InsuranceDecision,
-  ShoeInfo,
-  GameResponse,
-  ErrorResponse,
-  BlackjackApiResult,
-} from "./types";
-
-export { isApiError } from "./types";
-
-// Card helpers — pure functions for hand evaluation & display state
-export {
-  cardValue,
-  handTotal,
-  isSoftHand,
-  canSplitHand,
-  countAllCards,
-  buildEmptyDisplayState,
-  buildDisplayState,
-} from "./cardHelpers";
-
 // API client — all server communication
 export {
-  fetchState,
-  deal,
-  submitInsurance,
-  submitAction,
-  clearGame,
-  fetchShoeInfo,
+	clearGame,
+	deal,
+	fetchShoeInfo,
+	fetchState,
+	submitAction,
+	submitInsurance,
 } from "./api";
+// Card helpers — pure functions for hand evaluation & display state
+export {
+	buildDisplayState,
+	buildEmptyDisplayState,
+	canSplitHand,
+	cardValue,
+	countAllCards,
+	handTotal,
+	isSoftHand,
+} from "./cardHelpers";
+// Types
+export type {
+	BlackjackAction,
+	BlackjackApiResult,
+	BlackjackGameState,
+	CardData,
+	ErrorResponse,
+	GamePhase,
+	GameResponse,
+	Hand,
+	HandResult,
+	InsuranceDecision,
+	Rank,
+	ShoeInfo,
+	Suit,
+} from "./types";
+export { isApiError } from "./types";
