@@ -63,13 +63,12 @@ export {
   getShoeCount,
 } from "./shoeManager";
 
-// Game Store — in-memory game state with TTL cleanup
+// Game Store — DB-backed game state persistence
 export {
   getActiveGame,
   getGameForUser,
   saveGame,
   clearGame,
-  getStoreStats,
   markPersisted,
   isPersisted,
 } from "./gameStore";

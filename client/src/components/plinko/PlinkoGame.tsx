@@ -15,13 +15,9 @@ const DIFFICULTY_OPTIONS: { value: Difficulty; label: string }[] = [
 
 const ROWS_OPTIONS = [8, 9, 10, 11, 12, 13, 14, 15, 16];
 
-interface PlinkoGameProps {
-	initialBalance: number;
-}
-
-export function PlinkoGame({ initialBalance }: PlinkoGameProps) {
+export function PlinkoGame() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const game = usePlinkoGame(initialBalance);
+	const game = usePlinkoGame();
 
 	usePlinkoCanvas({
 		canvasRef,

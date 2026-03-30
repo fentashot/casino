@@ -206,6 +206,10 @@ export const userRelations = relations(user, ({ many, one }) => ({
   expenses: many(expenseTable),
   spins: many(casinoSpin),
   blackjackRounds: many(blackjackRound),
+  blackjackActiveGame: one(blackjackActiveGame, {
+    fields: [user.id],
+    references: [blackjackActiveGame.userId],
+  }),
   balance: one(userBalance, {
     fields: [user.id],
     references: [userBalance.userId],
@@ -248,6 +252,34 @@ export const blackjackRoundRelations = relations(blackjackRound, ({ one }) => ({
 export const userBalanceRelations = relations(userBalance, ({ one }) => ({
   user: one(user, {
     fields: [userBalance.userId],
+    references: [user.id],
+  }),
+}));
+
+/**
+ * Active blackjack game sessions — replaces in-memory gameStore.
+ * One row per active user game; deleted when the game is cleared.
+ * The `state` column stores the full BlackjackGameState as JSONB.
+ */
+export const blackjackActiveGame = pgTable(
+  "blackjack_active_game",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => user.id, { onDelete: "cascade" }),
+    gameId: text("game_id").notNull().unique(),
+    state: jsonb("state").notNull(),
+    persisted: boolean("persisted").notNull().default(false),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+);
+
+export const blackjackActiveGameRelations = relations(blackjackActiveGame, ({ one }) => ({
+  user: one(user, {
+    fields: [blackjackActiveGame.userId],
     references: [user.id],
   }),
 }));

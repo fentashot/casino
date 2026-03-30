@@ -1,6 +1,7 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import { fetchBalance } from "@/lib/roulette/api";
 import type { Difficulty } from "./multipliers";
 
 export interface PlinkoResult {
@@ -9,14 +10,20 @@ export interface PlinkoResult {
 	bucket: number;
 }
 
-export function usePlinkoGame(initialBalance: number) {
+export function usePlinkoGame() {
 	const queryClient = useQueryClient();
+
+	const { data: balanceData } = useQuery({
+		queryKey: ["casino-balance"],
+		queryFn: fetchBalance,
+		staleTime: 5000,
+	});
+	const balance = balanceData?.balance ?? 0;
 
 	const [bet, setBet] = useState(100);
 	const [rows, setRows] = useState(16);
 	const [difficulty, setDifficulty] = useState<Difficulty>("expert");
 	const [isPlaying, setIsPlaying] = useState(false);
-	const [balance, setBalance] = useState(initialBalance);
 	const [lastResult, setLastResult] = useState<PlinkoResult | null>(null);
 	const [ballPath, setBallPath] = useState<number[] | null>(null);
 	const [showResult, setShowResult] = useState(false);
@@ -65,7 +72,6 @@ export function usePlinkoGame(initialBalance: number) {
 			}
 
 			const result = await res.json();
-			setBalance(result.balance);
 			queryClient.setQueryData(["casino-balance"], { balance: result.balance });
 
 			pendingResultRef.current = {

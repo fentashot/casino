@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Rows3, TrendingUp } from "lucide-react";
-import { useAuth } from "@/auth-context";
 import { PlinkoGame } from "@/components/plinko/PlinkoGame";
 
 export const Route = createFileRoute("/_authenticated/games/plinko")({
@@ -8,8 +7,6 @@ export const Route = createFileRoute("/_authenticated/games/plinko")({
 });
 
 function PlinkoPage() {
-	const { user } = useAuth();
-
 	return (
 		<div className="flex flex-col gap-5 pb-12">
 			<div className="flex items-start sm:items-center justify-between gap-4 animate-fade-in">
@@ -46,7 +43,7 @@ function PlinkoPage() {
 			</div>
 
 			<div className="animate-slide-up" style={{ animationDelay: "60ms" }}>
-				<PlinkoGame initialBalance={user?.balance ?? 0} />
+				<PlinkoGame />
 			</div>
 		</div>
 	);

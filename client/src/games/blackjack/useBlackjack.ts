@@ -7,7 +7,7 @@
    sub-hooks and exposing a flat public API to the page component.
    ============================================================================ */
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { api } from "@/lib/api";
 import { playWinSound } from "@/lib/audio";
@@ -67,7 +67,6 @@ export function useBlackjack(initialBalance = 0) {
 	/* ── Server game state ─────────────────────────────────────────────────── */
 
 	const [serverGame, setServerGame] = useState<BlackjackGameState | null>(null);
-	const [isLoading, setIsLoading] = useState(false);
 
 	/* ── Balance query ─────────────────────────────────────────────────────── */
 
@@ -118,103 +117,104 @@ export function useBlackjack(initialBalance = 0) {
 		[syncBalance, prepareForDeal, runAnimation, notify, queryClient],
 	);
 
+	/* ── Mutations ─────────────────────────────────────────────────────────── */
+
+	const dealMutation = useMutation({
+		mutationFn: async (bet: number) => {
+			const res = await api.blackjack.deal.$post({ json: { bet } });
+			return (await res.json()) as BlackjackApiResult;
+		},
+		onMutate: () => {
+			resetAnimation();
+			setServerGame(null);
+		},
+		onSuccess: (data) => {
+			if (isApiError(data)) {
+				notify.showError(data.error, DEAL_ERRORS);
+				return;
+			}
+			if (!data.game) {
+				notify.showUnexpectedError();
+				return;
+			}
+			handleGameResponse(data.game, 0, true);
+		},
+		onError: () => notify.showUnexpectedError(),
+	});
+
+	const insuranceMutation = useMutation({
+		mutationFn: async (decision: InsuranceDecision) => {
+			const res = await api.blackjack.insurance.$post({ json: { decision } });
+			return (await res.json()) as BlackjackApiResult;
+		},
+		onSuccess: (data, decision) => {
+			if (isApiError(data)) {
+				notify.showError(data.error, INSURANCE_ERRORS);
+				return;
+			}
+			if (!data.game) {
+				notify.showUnexpectedError();
+				return;
+			}
+			const prevShown = shownCountRef.current;
+			handleGameResponse(data.game, prevShown);
+			const hand = data.game.playerHands[0];
+			if (hand.insuranceResult) {
+				notify.showInsuranceResult(hand.insuranceResult, decision);
+			}
+		},
+		onError: () => notify.showUnexpectedError(),
+	});
+
+	const actionMutation = useMutation({
+		mutationFn: async (action: BlackjackAction) => {
+			const res = await api.blackjack.action.$post({ json: { action } });
+			return (await res.json()) as BlackjackApiResult;
+		},
+		onSuccess: (data) => {
+			if (isApiError(data)) {
+				notify.showError(data.error, ACTION_ERRORS);
+				return;
+			}
+			if (!data.game) {
+				notify.showUnexpectedError();
+				return;
+			}
+			const prevShown = shownCountRef.current;
+			handleGameResponse(data.game, prevShown);
+		},
+		onError: () => notify.showUnexpectedError(),
+	});
+
+	const isLoading =
+		dealMutation.isPending ||
+		insuranceMutation.isPending ||
+		actionMutation.isPending;
+
 	/* ── Actions ───────────────────────────────────────────────────────────── */
 
 	const deal = useCallback(
-		async (bet: number) => {
+		(bet: number) => {
 			if (isLoading) return;
-			setIsLoading(true);
-			resetAnimation();
-			setServerGame(null);
-
-			try {
-				const res = await api.blackjack.deal.$post({ json: { bet } });
-				const data = (await res.json()) as BlackjackApiResult;
-				if (isApiError(data)) {
-					notify.showError(data.error, DEAL_ERRORS);
-					return;
-				}
-				if (!data.game) {
-					notify.showUnexpectedError();
-					return;
-				}
-				handleGameResponse(data.game, 0, true);
-			} catch {
-				notify.showUnexpectedError();
-			} finally {
-				setIsLoading(false);
-			}
+			dealMutation.mutate(bet);
 		},
-		[isLoading, resetAnimation, handleGameResponse, notify],
+		[isLoading, dealMutation],
 	);
 
 	const takeInsurance = useCallback(
-		async (decision: InsuranceDecision) => {
+		(decision: InsuranceDecision) => {
 			if (isLoading || isAnimating) return;
-			setIsLoading(true);
-
-			try {
-				const res = await api.blackjack.insurance.$post({
-					json: { decision },
-				});
-				const data = (await res.json()) as BlackjackApiResult;
-				if (isApiError(data)) {
-					notify.showError(data.error, INSURANCE_ERRORS);
-					return;
-				}
-				if (!data.game) {
-					notify.showUnexpectedError();
-					return;
-				}
-
-				const prevShown = shownCountRef.current;
-				handleGameResponse(data.game, prevShown);
-
-				const hand = data.game.playerHands[0];
-				if (hand.insuranceResult) {
-					notify.showInsuranceResult(hand.insuranceResult, decision);
-				}
-			} catch {
-				notify.showUnexpectedError();
-			} finally {
-				setIsLoading(false);
-			}
+			insuranceMutation.mutate(decision);
 		},
-		[isLoading, isAnimating, shownCountRef, handleGameResponse, notify],
+		[isLoading, isAnimating, insuranceMutation],
 	);
 
 	const performAction = useCallback(
-		async (action: BlackjackAction) => {
+		(action: BlackjackAction) => {
 			if (isLoading || isAnimating || !serverGame) return;
-			setIsLoading(true);
-
-			try {
-				const res = await api.blackjack.action.$post({ json: { action } });
-				const data = (await res.json()) as BlackjackApiResult;
-				if (isApiError(data)) {
-					notify.showError(data.error, ACTION_ERRORS);
-					return;
-				}
-				if (!data.game) {
-					notify.showUnexpectedError();
-					return;
-				}
-				const prevShown = shownCountRef.current;
-				handleGameResponse(data.game, prevShown);
-			} catch {
-				notify.showUnexpectedError();
-			} finally {
-				setIsLoading(false);
-			}
+			actionMutation.mutate(action);
 		},
-		[
-			isLoading,
-			isAnimating,
-			shownCountRef,
-			serverGame,
-			handleGameResponse,
-			notify,
-		],
+		[isLoading, isAnimating, serverGame, actionMutation],
 	);
 
 	const hit = useCallback(() => performAction("hit"), [performAction]);
