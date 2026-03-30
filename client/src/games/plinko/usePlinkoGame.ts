@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
+import { generateIdempotencyKey } from "@/games/roulette/utils";
 import { api, apiRequest } from "@/lib/api";
 import type { PlinkoPlayResult } from "@/lib/plinko/api";
 import { fetchBalance } from "@/lib/roulette/api";
@@ -61,7 +62,12 @@ export function usePlinkoGame() {
 		try {
 			const result = await apiRequest<PlinkoPlayResult>(
 				api.plinko.play.$post({
-					json: { bet, rows, difficulty },
+					json: {
+						bet,
+						rows,
+						difficulty,
+						idempotencyKey: generateIdempotencyKey(),
+					},
 				}),
 				"Something went wrong. Please try again.",
 			);

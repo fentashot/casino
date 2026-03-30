@@ -157,6 +157,7 @@ export const blackjackRound = pgTable(
   "blackjack_round",
   {
     id: text("id").primaryKey(),
+    gameId: text("game_id").unique(),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -209,6 +210,10 @@ export const userRelations = relations(user, ({ many, one }) => ({
   blackjackActiveGame: one(blackjackActiveGame, {
     fields: [user.id],
     references: [blackjackActiveGame.userId],
+  }),
+  blackjackShoe: one(blackjackShoe, {
+    fields: [user.id],
+    references: [blackjackShoe.userId],
   }),
   balance: one(userBalance, {
     fields: [user.id],
@@ -284,6 +289,28 @@ export const blackjackActiveGameRelations = relations(blackjackActiveGame, ({ on
   }),
 }));
 
+export const blackjackShoe = pgTable(
+  "blackjack_shoe",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => user.id, { onDelete: "cascade" }),
+    shoe: jsonb("shoe").notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("blackjack_shoe_updated_at_idx").on(table.updatedAt)],
+);
+
+export const blackjackShoeRelations = relations(blackjackShoe, ({ one }) => ({
+  user: one(user, {
+    fields: [blackjackShoe.userId],
+    references: [user.id],
+  }),
+}));
+
 // ============ Plinko ============
 
 export const plinkoRound = pgTable(
@@ -300,6 +327,8 @@ export const plinkoRound = pgTable(
     finalBucket: integer("final_bucket").notNull(),
     multiplier: numeric("multiplier").notNull(),
     balanceAfter: numeric("balance_after").notNull(),
+    seed: text("seed").notNull().default(""),
+    idempotencyKey: text("idempotency_key").unique(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [

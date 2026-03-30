@@ -19,6 +19,7 @@ const playSchema = z.object({
   bet: z.number().int().min(1).max(1_000_000),
   rows: z.number().int().min(8).max(16),
   difficulty: z.enum(["low", "medium", "high", "expert"]),
+  idempotencyKey: z.string().min(16).max(64),
 });
 
 /* ============================================================================
@@ -30,8 +31,8 @@ export const plinkoRouter = new Hono<Vars>().post(
   zValidator("json", playSchema),
   async (c) => {
     const { id: userId } = c.get("user") as User;
-    const { bet, rows, difficulty } = c.req.valid("json");
-    const result = await PlinkoService.play(userId, bet, rows, difficulty);
+    const { bet, rows, difficulty, idempotencyKey } = c.req.valid("json");
+    const result = await PlinkoService.play(userId, bet, rows, difficulty, idempotencyKey);
     return mapResultToResponse(c, result);
   },
 );

@@ -59033,6 +59033,8 @@ __export(exports_schema, {
   casinoServerSeed: () => casinoServerSeed,
   casinoBetRelations: () => casinoBetRelations,
   casinoBet: () => casinoBet,
+  blackjackShoeRelations: () => blackjackShoeRelations,
+  blackjackShoe: () => blackjackShoe,
   blackjackRoundRelations: () => blackjackRoundRelations,
   blackjackRound: () => blackjackRound,
   blackjackActiveGameRelations: () => blackjackActiveGameRelations,
@@ -59130,6 +59132,7 @@ var casinoBet = pgTable("casino_bet", {
 }, (table2) => [index("bet_spin_id_idx").on(table2.spinId)]);
 var blackjackRound = pgTable("blackjack_round", {
   id: text("id").primaryKey(),
+  gameId: text("game_id").unique(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   totalBet: numeric("total_bet").notNull(),
   totalWin: numeric("total_win").notNull(),
@@ -59155,6 +59158,10 @@ var userRelations = relations(user, ({ many, one }) => ({
   blackjackActiveGame: one(blackjackActiveGame, {
     fields: [user.id],
     references: [blackjackActiveGame.userId]
+  }),
+  blackjackShoe: one(blackjackShoe, {
+    fields: [user.id],
+    references: [blackjackShoe.userId]
   }),
   balance: one(userBalance, {
     fields: [user.id],
@@ -59209,6 +59216,17 @@ var blackjackActiveGameRelations = relations(blackjackActiveGame, ({ one }) => (
     references: [user.id]
   })
 }));
+var blackjackShoe = pgTable("blackjack_shoe", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  shoe: jsonb("shoe").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date).notNull()
+}, (table2) => [index("blackjack_shoe_updated_at_idx").on(table2.updatedAt)]);
+var blackjackShoeRelations = relations(blackjackShoe, ({ one }) => ({
+  user: one(user, {
+    fields: [blackjackShoe.userId],
+    references: [user.id]
+  })
+}));
 var plinkoRound = pgTable("plinko_round", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
@@ -59219,6 +59237,8 @@ var plinkoRound = pgTable("plinko_round", {
   finalBucket: integer3("final_bucket").notNull(),
   multiplier: numeric("multiplier").notNull(),
   balanceAfter: numeric("balance_after").notNull(),
+  seed: text("seed").notNull().default(""),
+  idempotencyKey: text("idempotency_key").unique(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 }, (table2) => [
   index("plinko_round_user_id_idx").on(table2.userId),
@@ -59262,11 +59282,22 @@ var createMiddleware2 = (middleware) => middleware;
 
 // src/auth.ts
 init_drizzle_orm();
+function parseTrustedOrigins() {
+  const configured = (process.env.TRUSTED_ORIGINS ?? "").split(",").map((origin) => origin.trim()).filter((origin) => origin.length > 0);
+  if (configured.length > 0)
+    return configured;
+  const fallback = ["http://localhost:3000", "http://127.0.0.1:3000", "http://0.0.0.0:3000"];
+  const betterAuthUrl = process.env.BETTER_AUTH_URL?.trim();
+  if (betterAuthUrl && !fallback.includes(betterAuthUrl)) {
+    fallback.push(betterAuthUrl);
+  }
+  return fallback;
+}
 var auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg"
   }),
-  trustedOrigins: ["http://localhost:3000", "http://127.0.0.1:3000"],
+  trustedOrigins: parseTrustedOrigins(),
   basePath: "/api/auth",
   emailAndPassword: {
     enabled: true
@@ -63487,15 +63518,143 @@ var choiceSchema = exports_external2.union([
 var betSchema = exports_external2.object({
   type: betTypeSchema,
   numbers: exports_external2.array(exports_external2.number().int().min(0).max(36)),
-  amount: exports_external2.number().int().positive(),
+  amount: exports_external2.number().int().positive().max(1e5),
   color: exports_external2.enum(["red", "black"]).optional(),
   choice: choiceSchema
+}).superRefine((bet, ctx) => {
+  switch (bet.type) {
+    case "straight":
+      if (bet.numbers.length !== 1) {
+        ctx.addIssue({
+          code: exports_external2.ZodIssueCode.custom,
+          path: ["numbers"],
+          message: "Straight bet requires exactly 1 number"
+        });
+      }
+      break;
+    case "split":
+      if (bet.numbers.length !== 2) {
+        ctx.addIssue({
+          code: exports_external2.ZodIssueCode.custom,
+          path: ["numbers"],
+          message: "Split bet requires exactly 2 numbers"
+        });
+      }
+      break;
+    case "street":
+      if (bet.numbers.length !== 3) {
+        ctx.addIssue({
+          code: exports_external2.ZodIssueCode.custom,
+          path: ["numbers"],
+          message: "Street bet requires exactly 3 numbers"
+        });
+      }
+      break;
+    case "corner":
+      if (bet.numbers.length !== 4) {
+        ctx.addIssue({
+          code: exports_external2.ZodIssueCode.custom,
+          path: ["numbers"],
+          message: "Corner bet requires exactly 4 numbers"
+        });
+      }
+      break;
+    case "line":
+      if (bet.numbers.length !== 6) {
+        ctx.addIssue({
+          code: exports_external2.ZodIssueCode.custom,
+          path: ["numbers"],
+          message: "Line bet requires exactly 6 numbers"
+        });
+      }
+      break;
+    case "column":
+      if (!bet.choice || !["col1", "col2", "col3"].includes(bet.choice)) {
+        ctx.addIssue({
+          code: exports_external2.ZodIssueCode.custom,
+          path: ["choice"],
+          message: "Column bet requires choice: col1, col2, or col3"
+        });
+      }
+      if (bet.numbers.length > 0) {
+        ctx.addIssue({
+          code: exports_external2.ZodIssueCode.custom,
+          path: ["numbers"],
+          message: "Column bet should not include numbers"
+        });
+      }
+      break;
+    case "dozen":
+      if (!bet.choice || !["1st12", "2nd12", "3rd12"].includes(bet.choice)) {
+        ctx.addIssue({
+          code: exports_external2.ZodIssueCode.custom,
+          path: ["choice"],
+          message: "Dozen bet requires choice: 1st12, 2nd12, or 3rd12"
+        });
+      }
+      if (bet.numbers.length > 0) {
+        ctx.addIssue({
+          code: exports_external2.ZodIssueCode.custom,
+          path: ["numbers"],
+          message: "Dozen bet should not include numbers"
+        });
+      }
+      break;
+    case "even_odd":
+      if (!bet.choice || !["even", "odd"].includes(bet.choice)) {
+        ctx.addIssue({
+          code: exports_external2.ZodIssueCode.custom,
+          path: ["choice"],
+          message: "Even/Odd bet requires choice: even or odd"
+        });
+      }
+      if (bet.numbers.length > 0) {
+        ctx.addIssue({
+          code: exports_external2.ZodIssueCode.custom,
+          path: ["numbers"],
+          message: "Even/Odd bet should not include numbers"
+        });
+      }
+      break;
+    case "red_black":
+      if (!bet.color) {
+        ctx.addIssue({
+          code: exports_external2.ZodIssueCode.custom,
+          path: ["color"],
+          message: "Red/Black bet requires color"
+        });
+      }
+      if (bet.numbers.length > 0) {
+        ctx.addIssue({
+          code: exports_external2.ZodIssueCode.custom,
+          path: ["numbers"],
+          message: "Red/Black bet should not include numbers"
+        });
+      }
+      break;
+    case "high_low":
+      if (!bet.choice || !["low", "high"].includes(bet.choice)) {
+        ctx.addIssue({
+          code: exports_external2.ZodIssueCode.custom,
+          path: ["choice"],
+          message: "High/Low bet requires choice: low or high"
+        });
+      }
+      if (bet.numbers.length > 0) {
+        ctx.addIssue({
+          code: exports_external2.ZodIssueCode.custom,
+          path: ["numbers"],
+          message: "High/Low bet should not include numbers"
+        });
+      }
+      break;
+  }
 });
 var spinRequestSchema = exports_external2.object({
   bets: exports_external2.array(betSchema),
   clientSeed: exports_external2.string().min(1),
   nonce: exports_external2.number().int().nonnegative(),
-  idempotencyKey: exports_external2.string().min(16).max(64).optional()
+  idempotencyKey: exports_external2.string().min(16).max(64)
 });
 var expenseIdSchema = exports_external2.object({
   id: exports_external2.coerce.number().int().positive("ID must be a positive number")
@@ -63564,10 +63723,12 @@ class AppError extends Error {
     return ERROR_STATUS_MAP[this.code] ?? 500;
   }
   toJSON() {
+    const isProduction2 = false;
+    const safeMessage = !isProduction2 && this.message !== this.code ? { message: this.message } : {};
     return {
       error: this.code,
-      ...this.message !== this.code ? { message: this.message } : {},
-      ...this.details ? { details: this.details } : {}
+      ...safeMessage,
+      ...!isProduction2 && this.details ? { details: this.details } : {}
     };
   }
 }
@@ -63598,24 +63759,18 @@ __export(exports_balance, {
   getLastNonce: () => getLastNonce,
   getBalanceAmount: () => getBalanceAmount,
   findOrCreateBalance: () => findOrCreateBalance,
-  findByUserId: () => findByUserId
+  findByUserId: () => findByUserId,
+  deductBalanceAtomic: () => deductBalanceAtomic
 });
 init_drizzle_orm();
 var DEFAULT_BALANCE = "100000.00";
 var DEFAULT_NONCE = 0;
 async function findOrCreateBalance(userId) {
-  const existing = await db.query.userBalance.findFirst({
+  await db.insert(userBalance).values({ userId, balance: DEFAULT_BALANCE, lastNonce: DEFAULT_NONCE }).onConflictDoNothing();
+  const row = await db.query.userBalance.findFirst({
     where: eq(userBalance.userId, userId)
   });
-  if (existing) {
-    return { balance: Number(existing.balance) };
-  }
-  await db.insert(userBalance).values({
-    userId,
-    balance: DEFAULT_BALANCE,
-    lastNonce: DEFAULT_NONCE
-  });
-  return { balance: Number(DEFAULT_BALANCE) };
+  return { balance: Number(row.balance) };
 }
 async function findByUserId(userId) {
   return db.query.userBalance.findFirst({
@@ -63641,6 +63796,16 @@ async function updateBalance(userId, newBalance) {
 }
 async function updateBalanceAndNonce(userId, newBalance, newNonce) {
   await db.update(userBalance).set({ balance: newBalance, lastNonce: newNonce }).where(eq(userBalance.userId, userId));
+}
+async function deductBalanceAtomic(userId, amount) {
+  const rows = await db.execute(sql3`UPDATE user_balance
+        SET balance = balance - ${amount}
+        WHERE user_id = ${userId}
+          AND balance >= ${amount}
+        RETURNING balance`);
+  if (rows.length === 0)
+    return null;
+  return { newBalance: Number(rows[0].balance) };
 }
 // src/db/queries/seed.ts
 var exports_seed = {};
@@ -64123,12 +64288,25 @@ async function findSpinHistory(userId, limit, offset) {
     with: { bets: true }
   });
 }
-async function createSpinWithBets(spin, bets, userId, newBalance, nonce) {
-  await db.transaction(async (tx) => {
+async function createSpinWithBets(spin, bets, userId, totalBet, totalWin, nonce) {
+  return db.transaction(async (tx) => {
+    const locked = await tx.execute(sql3`SELECT balance, last_nonce FROM user_balance
+          WHERE user_id = ${userId}
+          FOR UPDATE`);
+    if (locked.length === 0)
+      return { insufficientFunds: true };
+    const balance = Number(locked[0].balance);
+    const lastNonce = Number(locked[0].last_nonce);
+    if (balance < totalBet)
+      return { insufficientFunds: true };
+    if (nonce !== lastNonce + 1)
+      return { invalidNonce: true };
+    const newBalance = balance - totalBet + totalWin;
     await tx.insert(casinoSpin).values(spin);
     for (const bet of bets)
       await tx.insert(casinoBet).values(bet);
-    await tx.update(userBalance).set({ balance: newBalance, lastNonce: nonce }).where(eq(userBalance.userId, userId));
+    await tx.update(userBalance).set({ balance: newBalance.toString(), lastNonce: nonce }).where(eq(userBalance.userId, userId));
+    return { newBalance };
   });
 }
 async function getActiveSeedHash() {
@@ -64139,17 +64317,24 @@ async function getActiveSeedHash() {
   return ok2({ serverSeedHash: activeSeed.hash });
 }
 async function rotateSeed() {
-  await exports_seed.deactivateAll();
   const newSeed = crypto4.randomBytes(32).toString("hex");
   const newHash = crypto4.createHash("sha256").update(newSeed).digest("hex");
   const newId = crypto4.randomBytes(16).toString("hex");
-  await exports_seed.create(newId, newSeed, newHash);
+  await db.transaction(async (tx) => {
+    await tx.update(casinoServerSeed).set({ active: false }).where(eq(casinoServerSeed.active, true));
+    await tx.insert(casinoServerSeed).values({
+      id: newId,
+      seed: newSeed,
+      hash: newHash,
+      active: true
+    });
+  });
   return ok2({ ok: true, newSeedHash: newHash });
 }
 async function revealSeed(seedId) {
   const seedRecord = await exports_seed.findById(seedId);
   if (!seedRecord) {
-    return err(ErrorCode.SEED_NOT_FOUND, `Seed ${seedId} not found`);
+    return err(ErrorCode.SEED_NOT_FOUND, "Seed not found");
   }
   if (seedRecord.active) {
     return err(ErrorCode.SEED_STILL_ACTIVE, "Cannot reveal an active seed — rotate first");
@@ -64170,25 +64355,14 @@ async function getNonce(userId) {
   return ok2({ nextNonce: (record2?.lastNonce || 0) + 1 });
 }
 async function executeSpin(userId, input) {
-  if (input.idempotencyKey) {
-    const cached4 = await checkIdempotency(userId, input.idempotencyKey);
-    if (cached4)
-      return ok2(cached4);
-  }
+  const cached4 = await checkIdempotency(userId, input.idempotencyKey);
+  if (cached4)
+    return ok2(cached4);
   const serverSeedRecord = await exports_seed.findActive();
   if (!serverSeedRecord) {
     return err(ErrorCode.NO_ACTIVE_SEED, "No active server seed — contact support");
   }
   const totalBet = input.bets.reduce((sum2, bet) => sum2 + bet.amount, 0);
-  const balanceRecord = await exports_balance.findByUserId(userId);
-  if (!balanceRecord || Number(balanceRecord.balance) < totalBet) {
-    const current = balanceRecord ? Number(balanceRecord.balance) : 0;
-    return err(ErrorCode.INSUFFICIENT_FUNDS, `Insufficient funds: need ${totalBet}, have ${current}`, { required: totalBet, current });
-  }
-  const expectedNonce = balanceRecord.lastNonce + 1;
-  if (input.nonce !== expectedNonce) {
-    return err(ErrorCode.INVALID_NONCE, `Invalid nonce: expected ${expectedNonce}, got ${input.nonce}. Try refreshing the page.`, { expectedNonce, receivedNonce: input.nonce });
-  }
   const hmac3 = computeHmac(serverSeedRecord.seed, input.clientSeed, input.nonce);
   const number6 = hashToNumber(hmac3);
   const color = number6 === 0 ? "green" : redNumbers.has(number6) ? "red" : "black";
@@ -64196,7 +64370,6 @@ async function executeSpin(userId, input) {
   for (const bet of input.bets) {
     totalWin += calculateWinnings(bet, { number: number6, color });
   }
-  const newBalance = Number(balanceRecord.balance) - totalBet + totalWin;
   const spinId = crypto4.randomBytes(16).toString("hex");
   const betInserts = input.bets.map((bet) => ({
     id: crypto4.randomBytes(16).toString("hex"),
@@ -64208,7 +64381,7 @@ async function executeSpin(userId, input) {
     choice: bet.choice,
     win: calculateWinnings(bet, { number: number6, color }).toString()
   }));
-  await createSpinWithBets({
+  const txResult = await createSpinWithBets({
     id: spinId,
     userId,
     clientSeed: input.clientSeed,
@@ -64219,13 +64392,19 @@ async function executeSpin(userId, input) {
     color,
     totalBet: totalBet.toString(),
     totalWin: totalWin.toString(),
-    idempotencyKey: input.idempotencyKey || null
-  }, betInserts, userId, newBalance.toString(), input.nonce);
+    idempotencyKey: input.idempotencyKey
+  }, betInserts, userId, totalBet, totalWin, input.nonce);
+  if ("insufficientFunds" in txResult) {
+    return err(ErrorCode.INSUFFICIENT_FUNDS, "Insufficient funds");
+  }
+  if ("invalidNonce" in txResult) {
+    return err(ErrorCode.INVALID_NONCE, "Invalid nonce. Try refreshing the page.");
+  }
   return ok2({
     result: { number: number6, color },
     totalWin,
     totalBet,
-    newBalance,
+    newBalance: txResult.newBalance,
     provablyFair: {
       clientSeed: input.clientSeed,
       serverSeedHash: serverSeedRecord.hash,
@@ -64301,6 +64480,7 @@ var rouletteRouter = new Hono2().get("/seed", async (c) => {
 });
 
 // src/games/blackjack/service.ts
+init_drizzle_orm();
 import * as crypto8 from "crypto";
 
 // src/games/blackjack/engine/types.ts
@@ -64438,10 +64618,78 @@ import * as crypto7 from "crypto";
 
 // src/games/blackjack/engine/shoeManager.ts
 import * as crypto6 from "crypto";
+init_drizzle_orm();
 var shoeStore = new Map;
 var BURN_COUNT = 1;
+var SHOE_CACHE_TTL_MS = Number(process.env.BLACKJACK_SHOE_CACHE_TTL_MS ?? 30 * 60 * 1000);
+function nowMs() {
+  return Date.now();
+}
+function cleanupStaleShoes() {
+  const cutoff = nowMs() - SHOE_CACHE_TTL_MS;
+  for (const [userId, entry] of shoeStore.entries()) {
+    if (entry.lastAccessedAt < cutoff) {
+      shoeStore.delete(userId);
+    }
+  }
+}
+function touchShoe(userId, shoe) {
+  shoeStore.set(userId, { shoe, lastAccessedAt: nowMs() });
+}
+function getCachedShoe(userId) {
+  cleanupStaleShoes();
+  const entry = shoeStore.get(userId);
+  if (!entry)
+    return;
+  touchShoe(userId, entry.shoe);
+  return entry.shoe;
+}
+function parsePersistedShoe(raw2) {
+  if (typeof raw2 !== "object" || raw2 === null)
+    return null;
+  const candidate = raw2;
+  if (!Array.isArray(candidate.cards))
+    return null;
+  if (typeof candidate.index !== "number")
+    return null;
+  if (typeof candidate.totalSize !== "number")
+    return null;
+  if (typeof candidate.seedHex !== "string")
+    return null;
+  return {
+    cards: candidate.cards,
+    index: candidate.index,
+    totalSize: candidate.totalSize,
+    seedHex: candidate.seedHex
+  };
+}
+async function hydrateShoe(userId) {
+  if (getCachedShoe(userId))
+    return;
+  const persisted = await db.query.blackjackShoe.findFirst({
+    where: eq(blackjackShoe.userId, userId)
+  });
+  if (!persisted)
+    return;
+  const shoe = parsePersistedShoe(persisted.shoe);
+  if (!shoe)
+    return;
+  touchShoe(userId, shoe);
+}
+async function persistShoe(userId) {
+  const shoe = getCachedShoe(userId);
+  if (!shoe)
+    return;
+  await db.insert(blackjackShoe).values({ userId, shoe }).onConflictDoUpdate({
+    target: blackjackShoe.userId,
+    set: {
+      shoe,
+      updatedAt: new Date
+    }
+  });
+}
 function getOrBuildShoe(userId) {
-  const existing = shoeStore.get(userId);
+  const existing = getCachedShoe(userId);
   if (existing) {
     const penetration = existing.index / existing.totalSize;
     if (penetration < RESHUFFLE_PENETRATION) {
@@ -64451,15 +64699,17 @@ function getOrBuildShoe(userId) {
   return rebuildShoe(userId);
 }
 function drawFromShoe(userId) {
-  let shoe = shoeStore.get(userId);
+  let shoe = getCachedShoe(userId);
   if (!shoe || shoe.index >= shoe.cards.length) {
     shoe = rebuildShoe(userId);
   }
   const card = shoe.cards[shoe.index++];
+  touchShoe(userId, shoe);
   return card;
 }
-function getShoeInfo(userId) {
-  const shoe = shoeStore.get(userId);
+async function getShoeInfo(userId) {
+  await hydrateShoe(userId);
+  const shoe = getCachedShoe(userId);
   if (!shoe)
     return null;
   const cardsRemaining = shoe.totalSize - shoe.index;
@@ -64476,7 +64726,7 @@ function rebuildShoe(userId) {
     totalSize: shuffled.length,
     seedHex
   };
-  shoeStore.set(userId, shoe);
+  touchShoe(userId, shoe);
   return shoe;
 }
 
@@ -64775,16 +65025,22 @@ async function getGameForUser(userId) {
   return row ? row.state : undefined;
 }
 async function saveGame(game) {
+  const existing = await db.query.blackjackActiveGame.findFirst({
+    where: eq(blackjackActiveGame.userId, game.userId),
+    columns: { gameId: true }
+  });
+  const isSameGame = existing?.gameId === game.id;
   await db.insert(blackjackActiveGame).values({
     userId: game.userId,
     gameId: game.id,
     state: game,
-    persisted: false
+    persisted: isSameGame ? true : false
   }).onConflictDoUpdate({
     target: blackjackActiveGame.userId,
     set: {
       gameId: game.id,
       state: game,
+      persisted: isSameGame ? true : false,
       updatedAt: new Date
     }
   });
@@ -64795,14 +65051,9 @@ async function clearGame(userId) {
 async function markPersisted(gameId) {
   await db.update(blackjackActiveGame).set({ persisted: true }).where(eq(blackjackActiveGame.gameId, gameId));
 }
-async function isPersisted(gameId) {
-  const row = await db.query.blackjackActiveGame.findFirst({
-    where: eq(blackjackActiveGame.gameId, gameId)
-  });
-  return row?.persisted ?? false;
-}
 // src/games/blackjack/service.ts
 async function getState(userId) {
+  await hydrateShoe(userId);
   const active = await getActiveGame(userId);
   if (active) {
     return ok2({ game: sanitizeGame(active) });
@@ -64817,17 +65068,55 @@ async function getState(userId) {
   return ok2({ game: null });
 }
 async function deal(userId, bet) {
-  if (await getActiveGame(userId)) {
+  await hydrateShoe(userId);
+  const txResult = await db.transaction(async (tx) => {
+    await tx.insert(userBalance).values({ userId, balance: "100000.00", lastNonce: 0 }).onConflictDoNothing();
+    const lockedBalance = await tx.execute(sql3`SELECT balance FROM user_balance
+          WHERE user_id = ${userId}
+          FOR UPDATE`);
+    if (lockedBalance.length === 0) {
+      return { errorCode: ErrorCode.INTERNAL_ERROR };
+    }
+    const existingGame = await tx.query.blackjackActiveGame.findFirst({
+      where: eq(blackjackActiveGame.userId, userId),
+      columns: { state: true }
+    });
+    if (existingGame && typeof existingGame.state === "object" && existingGame.state !== null && existingGame.state.phase !== "finished") {
+      return { errorCode: ErrorCode.ACTIVE_GAME_EXISTS };
+    }
+    const currentBalance = Number(lockedBalance[0].balance);
+    if (currentBalance < bet) {
+      return { errorCode: ErrorCode.INSUFFICIENT_FUNDS };
+    }
+    const nextGame = dealGame(bet, currentBalance, userId);
+    await tx.update(userBalance).set({ balance: nextGame.balance.toString() }).where(eq(userBalance.userId, userId));
+    await tx.insert(blackjackActiveGame).values({
+      userId,
+      gameId: nextGame.id,
+      state: nextGame,
+      persisted: false
+    }).onConflictDoUpdate({
+      target: blackjackActiveGame.userId,
+      set: {
+        gameId: nextGame.id,
+        state: nextGame,
+        persisted: false,
+        updatedAt: new Date
+      }
+    });
+    return { game: nextGame };
+  });
+  if ("errorCode" in txResult && txResult.errorCode === ErrorCode.ACTIVE_GAME_EXISTS) {
     return err(ErrorCode.ACTIVE_GAME_EXISTS, "Finish or clear your current game first");
   }
-  const { balance: currentBalance } = await findOrCreateBalance2(userId);
-  if (currentBalance < bet) {
-    return err(ErrorCode.INSUFFICIENT_FUNDS, `Insufficient funds: need ${bet}, have ${currentBalance}`, { required: bet, current: currentBalance });
+  if ("errorCode" in txResult && txResult.errorCode === ErrorCode.INSUFFICIENT_FUNDS) {
+    return err(ErrorCode.INSUFFICIENT_FUNDS, "Insufficient funds");
   }
-  const game = dealGame(bet, currentBalance, userId);
-  await syncBalance(userId, game.balance);
-  await saveGame(game);
-  return ok2({ game: sanitizeGame(game) });
+  if ("errorCode" in txResult && txResult.errorCode === ErrorCode.INTERNAL_ERROR) {
+    return err(ErrorCode.INTERNAL_ERROR, "Failed to start game");
+  }
+  await persistShoe(userId);
+  return ok2({ game: sanitizeGame(txResult.game) });
 }
 async function handleInsurance(userId, decision) {
   const game = await getActiveGame(userId);
@@ -64839,6 +65128,7 @@ async function handleInsurance(userId, decision) {
   }
   let updated;
   try {
+    await hydrateShoe(userId);
     updated = resolveInsurance(game, decision);
   } catch (e) {
     return err(ErrorCode.INSUFFICIENT_FUNDS, e.message);
@@ -64848,6 +65138,7 @@ async function handleInsurance(userId, decision) {
     await persistRound(userId, updated);
   }
   await saveGame(updated);
+  await persistShoe(userId);
   return ok2({ game: sanitizeGame(updated) });
 }
 async function handleAction(userId, action) {
@@ -64873,6 +65164,7 @@ async function handleAction(userId, action) {
     return validationError;
   let updated;
   try {
+    await hydrateShoe(userId);
     updated = executeAction(action, game);
   } catch (e) {
     return err(ErrorCode.VALIDATION_ERROR, e.message);
@@ -64887,6 +65179,7 @@ async function handleAction(userId, action) {
     await persistRound(userId, updated);
   }
   await saveGame(updated);
+  await persistShoe(userId);
   return ok2({ game: sanitizeGame(updated) });
 }
 async function clearFinishedGame(userId) {
@@ -64898,8 +65191,8 @@ async function clearFinishedGame(userId) {
   await clearGame(userId);
   return ok2({ ok: true });
 }
-function getShoeInfoForUser(userId) {
-  const info = getShoeInfo(userId);
+async function getShoeInfoForUser(userId) {
+  const info = await getShoeInfo(userId);
   if (!info) {
     return ok2({ cardsRemaining: null, penetration: null });
   }
@@ -64908,13 +65201,7 @@ function getShoeInfoForUser(userId) {
 async function syncBalance(userId, newBalance) {
   await exports_balance.updateBalance(userId, newBalance);
 }
-async function findOrCreateBalance2(userId) {
-  return exports_balance.findOrCreateBalance(userId);
-}
 async function persistRound(userId, game) {
-  if (await isPersisted(game.id))
-    return;
-  await markPersisted(game.id);
   let totalBet = 0;
   let totalWin = 0;
   for (const hand of game.playerHands) {
@@ -64940,12 +65227,14 @@ async function persistRound(userId, game) {
   }));
   await db.insert(blackjackRound).values({
     id: crypto8.randomBytes(16).toString("hex"),
+    gameId: game.id,
     userId,
     totalBet: totalBet.toString(),
     totalWin: totalWin.toString(),
     handsSnapshot,
     balanceAfter: game.balance.toString()
-  });
+  }).onConflictDoNothing({ target: blackjackRound.gameId });
+  await markPersisted(game.id);
 }
 function validateAction(action, game, hand) {
   switch (action) {
@@ -65015,13 +65304,14 @@ var blackjackRouter = new Hono2().get("/state", async (c) => {
   const { id: userId } = c.get("user");
   const result = await clearFinishedGame(userId);
   return mapResultToResponse(c, result);
-}).get("/shoe-info", (c) => {
+}).get("/shoe-info", async (c) => {
   const { id: userId } = c.get("user");
-  const result = getShoeInfoForUser(userId);
+  const result = await getShoeInfoForUser(userId);
   return mapResultToResponse(c, result);
 });
 
 // src/games/plinko/service.ts
+init_drizzle_orm();
 import * as crypto9 from "crypto";
 
 // src/games/plinko/engine.ts
@@ -65103,50 +65393,57 @@ function xorshift(x) {
 }
 
 // src/games/plinko/service.ts
-async function play(userId, bet, rows, difficulty) {
-  const { balance: currentBalance } = await findOrCreateBalance3(userId);
-  if (currentBalance < bet) {
-    return err(ErrorCode.INSUFFICIENT_FUNDS, `Insufficient funds: need ${bet}, have ${currentBalance}`, { required: bet, current: currentBalance });
+async function play(userId, bet, rows, difficulty, idempotencyKey) {
+  const existing = await db.query.plinkoRound.findFirst({
+    where: eq(plinkoRound.idempotencyKey, idempotencyKey)
+  });
+  if (existing) {
+    return ok2({
+      path: [],
+      finalBucket: existing.finalBucket,
+      multiplier: Number(existing.multiplier),
+      win: Number(existing.totalWin),
+      balance: Number(existing.balanceAfter)
+    });
   }
+  await exports_balance.findOrCreateBalance(userId);
   const seed = crypto9.randomBytes(16).toString("hex");
   const result = dropBall(bet, rows, difficulty, seed);
-  const newBalance = currentBalance - bet + result.win;
-  await updateBalance2(userId, newBalance);
-  await createRound({
-    userId,
-    bet,
-    totalWin: result.win,
-    rows,
-    difficulty,
-    finalBucket: result.finalBucket,
-    multiplier: result.multiplier,
-    balanceAfter: newBalance
+  const roundId = crypto9.randomBytes(16).toString("hex");
+  const txResult = await db.transaction(async (tx) => {
+    const deducted = await tx.execute(sql3`UPDATE user_balance
+          SET balance = balance - ${bet}
+          WHERE user_id = ${userId}
+            AND balance >= ${bet}
+          RETURNING balance`);
+    if (deducted.length === 0)
+      return null;
+    const newBalance = Number(deducted[0].balance) + result.win;
+    await tx.execute(sql3`UPDATE user_balance SET balance = ${newBalance} WHERE user_id = ${userId}`);
+    await tx.insert(plinkoRound).values({
+      id: roundId,
+      userId,
+      bet: bet.toString(),
+      totalWin: result.win.toString(),
+      rows,
+      difficulty,
+      finalBucket: result.finalBucket,
+      multiplier: result.multiplier.toString(),
+      balanceAfter: newBalance.toString(),
+      seed,
+      idempotencyKey
+    });
+    return { newBalance };
   });
+  if (!txResult) {
+    return err(ErrorCode.INSUFFICIENT_FUNDS, "Insufficient funds");
+  }
   return ok2({
     path: result.path,
     finalBucket: result.finalBucket,
     multiplier: result.multiplier,
     win: result.win,
-    balance: newBalance
-  });
-}
-async function findOrCreateBalance3(userId) {
-  return exports_balance.findOrCreateBalance(userId);
-}
-async function updateBalance2(userId, newBalance) {
-  return exports_balance.updateBalance(userId, newBalance);
-}
-async function createRound(data) {
-  await db.insert(plinkoRound).values({
-    id: crypto9.randomBytes(16).toString("hex"),
-    userId: data.userId,
-    bet: data.bet.toString(),
-    totalWin: data.totalWin.toString(),
-    rows: data.rows,
-    difficulty: data.difficulty,
-    finalBucket: data.finalBucket,
-    multiplier: data.multiplier.toString(),
-    balanceAfter: data.balanceAfter.toString()
+    balance: txResult.newBalance
   });
 }
 
@@ -65154,12 +65451,13 @@ async function createRound(data) {
 var playSchema = exports_external2.object({
   bet: exports_external2.number().int().min(1).max(1e6),
   rows: exports_external2.number().int().min(8).max(16),
-  difficulty: exports_external2.enum(["low", "medium", "high", "expert"])
+  difficulty: exports_external2.enum(["low", "medium", "high", "expert"]),
+  idempotencyKey: exports_external2.string().min(16).max(64)
 });
 var plinkoRouter = new Hono2().post("/play", zValidator("json", playSchema), async (c) => {
   const { id: userId } = c.get("user");
-  const { bet, rows, difficulty } = c.req.valid("json");
-  const result = await play(userId, bet, rows, difficulty);
+  const { bet, rows, difficulty, idempotencyKey } = c.req.valid("json");
+  const result = await play(userId, bet, rows, difficulty, idempotencyKey);
   return mapResultToResponse(c, result);
 });
 
@@ -66127,8 +66425,53 @@ var scripts = {
 };
 
 // src/middleware/index.ts
+var DEFAULT_TRUSTED_ORIGINS = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://0.0.0.0:3000"
+];
+var trustedProxyHeader = process.env.TRUSTED_PROXY_HEADER?.trim().toLowerCase() ?? "";
+function parseTrustedOrigins2() {
+  const configured = (process.env.TRUSTED_ORIGINS ?? "").split(",").map((origin) => origin.trim()).filter((origin) => origin.length > 0);
+  const origins = configured.length > 0 ? configured : [...DEFAULT_TRUSTED_ORIGINS];
+  const betterAuthUrl = process.env.BETTER_AUTH_URL?.trim();
+  if (betterAuthUrl && !origins.includes(betterAuthUrl)) {
+    origins.push(betterAuthUrl);
+  }
+  return origins;
+}
+var trustedOrigins = parseTrustedOrigins2();
+function firstIpFromXForwardedFor(value) {
+  const first = value.split(",")[0]?.trim();
+  return first && first.length > 0 ? first : undefined;
+}
+function trustedHeaderIp(c) {
+  if (trustedProxyHeader === "cf-connecting-ip") {
+    return c.req.header("cf-connecting-ip")?.trim() || undefined;
+  }
+  if (trustedProxyHeader === "x-real-ip") {
+    return c.req.header("x-real-ip")?.trim() || undefined;
+  }
+  if (trustedProxyHeader === "x-forwarded-for") {
+    const header = c.req.header("x-forwarded-for");
+    return header ? firstIpFromXForwardedFor(header) : undefined;
+  }
+  return;
+}
+function socketRemoteIp(c) {
+  if (typeof c.env === "object" && c.env !== null) {
+    const maybeServer = "server" in c.env ? c.env.server : c.env;
+    if (maybeServer && typeof maybeServer.requestIP === "function") {
+      const info = maybeServer.requestIP(c.req.raw);
+      if (info?.address) {
+        return info.address;
+      }
+    }
+  }
+  return "127.0.0.1";
+}
 function clientIp(c) {
-  return c.req.header("x-forwarded-for") || c.req.header("cf-connecting-ip") || "unknown";
+  return trustedHeaderIp(c) ?? socketRemoteIp(c);
 }
 var securityHeaders = secureHeaders({
   xFrameOptions: "DENY",
@@ -66136,15 +66479,10 @@ var securityHeaders = secureHeaders({
   referrerPolicy: "strict-origin-when-cross-origin",
   crossOriginEmbedderPolicy: false
 });
-var authCors = cors({
-  origin: [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://0.0.0.0:3000",
-    process.env.BETTER_AUTH_URL
-  ],
+var apiCors = cors({
+  origin: trustedOrigins,
   allowHeaders: ["Content-Type", "Authorization"],
-  allowMethods: ["POST", "GET", "OPTIONS"],
+  allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   exposeHeaders: ["Content-Length"],
   maxAge: 600,
   credentials: true
@@ -66189,7 +66527,7 @@ app.use("/api/*", apiLimiter);
 app.use("/api/auth/*", authLimiter);
 app.use("/api/casino/spin", spinLimiter);
 app.use("/api/blackjack/*", blackjackLimiter);
-app.use("/api/auth/*", authCors);
+app.use("/api/*", apiCors);
 app.use("/api/expenses/*", useAuthMiddleware);
 app.use("/api/casino/*", useAuthMiddleware);
 app.use("/api/blackjack/*", useAuthMiddleware);

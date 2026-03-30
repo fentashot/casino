@@ -9,7 +9,7 @@ import { plinkoRouter } from "./games/plinko/router";
 import { statsRouter } from "./games/stats/router";
 import {
   securityHeaders,
-  authCors,
+  apiCors,
   apiLimiter,
   authLimiter,
   spinLimiter,
@@ -58,7 +58,7 @@ app.use("/api/blackjack/*", blackjackLimiter);
    CORS & Auth
    ============================================================================ */
 
-app.use("/api/auth/*", authCors);
+app.use("/api/*", apiCors);
 
 app.use("/api/expenses/*", useAuthMiddleware);
 app.use("/api/casino/*", useAuthMiddleware);

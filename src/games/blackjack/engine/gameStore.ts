@@ -50,19 +50,27 @@ export async function getGameForUser(
  * Save (create or update) a game in the store.
  */
 export async function saveGame(game: BlackjackGameState): Promise<void> {
+  const existing = await db.query.blackjackActiveGame.findFirst({
+    where: eq(blackjackActiveGame.userId, game.userId),
+    columns: { gameId: true },
+  });
+
+  const isSameGame = existing?.gameId === game.id;
+
   await db
     .insert(blackjackActiveGame)
     .values({
       userId: game.userId,
       gameId: game.id,
       state: game,
-      persisted: false,
+      persisted: isSameGame ? true : false,
     })
     .onConflictDoUpdate({
       target: blackjackActiveGame.userId,
       set: {
         gameId: game.id,
         state: game,
+        persisted: isSameGame ? true : false,
         updatedAt: new Date(),
       },
     });
@@ -85,15 +93,4 @@ export async function markPersisted(gameId: string): Promise<void> {
     .update(blackjackActiveGame)
     .set({ persisted: true })
     .where(eq(blackjackActiveGame.gameId, gameId));
-}
-
-/**
- * Returns true if this game has already been written to blackjack_round.
- */
-export async function isPersisted(gameId: string): Promise<boolean> {
-  const row = await db.query.blackjackActiveGame.findFirst({
-    where: eq(blackjackActiveGame.gameId, gameId),
-  });
-
-  return row?.persisted ?? false;
 }

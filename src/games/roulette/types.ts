@@ -191,7 +191,7 @@ export interface SpinInput {
   bets: z.infer<typeof betSchema>[];
   clientSeed: string;
   nonce: number;
-  idempotencyKey?: string;
+  idempotencyKey: string;
 }
 
 // From seed.repository.ts

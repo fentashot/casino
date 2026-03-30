@@ -66,8 +66,8 @@ export const blackjackRouter = new Hono<Vars>()
     return mapResultToResponse(c, result);
   })
 
-  .get("/shoe-info", (c) => {
+  .get("/shoe-info", async (c) => {
     const { id: userId } = c.get("user") as User;
-    const result = BlackjackService.getShoeInfoForUser(userId);
+    const result = await BlackjackService.getShoeInfoForUser(userId);
     return mapResultToResponse(c, result);
   });

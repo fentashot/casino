@@ -6,6 +6,7 @@ export interface PlinkoPlayRequest {
 	bet: number;
 	rows: number;
 	difficulty: Difficulty;
+	idempotencyKey: string;
 }
 
 export interface PlinkoPlayResult {

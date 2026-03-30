@@ -6,7 +6,7 @@
 
 import { db } from "../postgres";
 import { userBalance } from "../schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 const DEFAULT_BALANCE = "100000.00";
 const DEFAULT_NONCE = 0;
@@ -18,21 +18,16 @@ const DEFAULT_NONCE = 0;
 export async function findOrCreateBalance(
   userId: string,
 ): Promise<{ balance: number }> {
-  const existing = await db.query.userBalance.findFirst({
+  await db
+    .insert(userBalance)
+    .values({ userId, balance: DEFAULT_BALANCE, lastNonce: DEFAULT_NONCE })
+    .onConflictDoNothing();
+
+  const row = await db.query.userBalance.findFirst({
     where: eq(userBalance.userId, userId),
   });
 
-  if (existing) {
-    return { balance: Number(existing.balance) };
-  }
-
-  await db.insert(userBalance).values({
-    userId,
-    balance: DEFAULT_BALANCE,
-    lastNonce: DEFAULT_NONCE,
-  });
-
-  return { balance: Number(DEFAULT_BALANCE) };
+  return { balance: Number(row!.balance) };
 }
 
 /**
@@ -91,4 +86,24 @@ export async function updateBalanceAndNonce(
     .update(userBalance)
     .set({ balance: newBalance, lastNonce: newNonce })
     .where(eq(userBalance.userId, userId));
+}
+
+/**
+ * Atomically deduct `amount` from the user's balance.
+ * Returns new balance on success, or null if insufficient funds.
+ * Single UPDATE eliminates the TOCTOU gap between read-check-write.
+ */
+export async function deductBalanceAtomic(
+  userId: string,
+  amount: number,
+): Promise<{ newBalance: number } | null> {
+  const rows = await db.execute(
+    sql`UPDATE user_balance
+        SET balance = balance - ${amount}
+        WHERE user_id = ${userId}
+          AND balance >= ${amount}
+        RETURNING balance`,
+  );
+  if (rows.length === 0) return null;
+  return { newBalance: Number((rows[0] as any).balance) };
 }

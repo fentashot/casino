@@ -8,8 +8,8 @@
 import * as crypto from "crypto";
 import { type Result, ok, err, ErrorCode } from "../../lib/errors";
 import { db } from "../../db/postgres";
-import { casinoSpin, casinoBet, userBalance } from "../../db/schema";
-import { eq, desc } from "drizzle-orm";
+import { casinoSpin, casinoBet, casinoServerSeed, userBalance } from "../../db/schema";
+import { eq, desc, sql } from "drizzle-orm";
 import { balanceQueries, seedQueries } from "../../db/queries";
 import { calculateWinnings, computeHmac, hashToNumber, redNumbers } from "../../lib/casinoHelpers";
 import type { SpinResponse } from "../../types";
@@ -75,20 +75,44 @@ async function findSpinHistory(userId: string, limit: number, offset: number) {
   });
 }
 
+type SpinTxResult =
+  | { newBalance: number }
+  | { insufficientFunds: true }
+  | { invalidNonce: true };
+
 async function createSpinWithBets(
   spin: SpinInsert,
   bets: BetInsert[],
   userId: string,
-  newBalance: string,
+  totalBet: number,
+  totalWin: number,
   nonce: number,
-) {
-  await db.transaction(async (tx) => {
+): Promise<SpinTxResult> {
+  return db.transaction(async (tx) => {
+    // Lock the row — prevents concurrent spins from reading stale balance
+    const locked = await tx.execute(
+      sql`SELECT balance, last_nonce FROM user_balance
+          WHERE user_id = ${userId}
+          FOR UPDATE`,
+    );
+    if (locked.length === 0) return { insufficientFunds: true };
+
+    const balance = Number((locked[0] as any).balance);
+    const lastNonce = Number((locked[0] as any).last_nonce);
+
+    if (balance < totalBet) return { insufficientFunds: true };
+    if (nonce !== lastNonce + 1) return { invalidNonce: true };
+
+    const newBalance = balance - totalBet + totalWin;
+
     await tx.insert(casinoSpin).values(spin);
     for (const bet of bets) await tx.insert(casinoBet).values(bet);
     await tx
       .update(userBalance)
-      .set({ balance: newBalance, lastNonce: nonce })
+      .set({ balance: newBalance.toString(), lastNonce: nonce })
       .where(eq(userBalance.userId, userId));
+
+    return { newBalance };
   });
 }
 
@@ -106,13 +130,23 @@ export async function getActiveSeedHash(): Promise<Result<SeedHashResult>> {
 }
 
 export async function rotateSeed(): Promise<Result<RotateSeedResult>> {
-  await seedQueries.deactivateAll();
-
   const newSeed = crypto.randomBytes(32).toString("hex");
   const newHash = crypto.createHash("sha256").update(newSeed).digest("hex");
   const newId = crypto.randomBytes(16).toString("hex");
 
-  await seedQueries.create(newId, newSeed, newHash);
+  await db.transaction(async (tx) => {
+    await tx
+      .update(casinoServerSeed)
+      .set({ active: false })
+      .where(eq(casinoServerSeed.active, true));
+
+    await tx.insert(casinoServerSeed).values({
+      id: newId,
+      seed: newSeed,
+      hash: newHash,
+      active: true,
+    });
+  });
   return ok({ ok: true, newSeedHash: newHash });
 }
 
@@ -121,7 +155,7 @@ export async function revealSeed(
 ): Promise<Result<RevealSeedResult>> {
   const seedRecord = await seedQueries.findById(seedId);
   if (!seedRecord) {
-    return err(ErrorCode.SEED_NOT_FOUND, `Seed ${seedId} not found`);
+    return err(ErrorCode.SEED_NOT_FOUND, "Seed not found");
   }
 
   if (seedRecord.active) {
@@ -160,10 +194,8 @@ export async function executeSpin(
   input: SpinInput,
 ): Promise<Result<SpinResponse & { cached?: boolean }>> {
   // 1. Check idempotency — return cached result if spin already executed
-  if (input.idempotencyKey) {
-    const cached = await checkIdempotency(userId, input.idempotencyKey);
-    if (cached) return ok(cached);
-  }
+  const cached = await checkIdempotency(userId, input.idempotencyKey);
+  if (cached) return ok(cached);
 
   // 2. Get active server seed
   const serverSeedRecord = await seedQueries.findActive();
@@ -174,42 +206,20 @@ export async function executeSpin(
   // 3. Calculate total bet
   const totalBet = input.bets.reduce((sum, bet) => sum + bet.amount, 0);
 
-  // 4. Check user balance
-  const balanceRecord = await balanceQueries.findByUserId(userId);
-  if (!balanceRecord || Number(balanceRecord.balance) < totalBet) {
-    const current = balanceRecord ? Number(balanceRecord.balance) : 0;
-    return err(
-      ErrorCode.INSUFFICIENT_FUNDS,
-      `Insufficient funds: need ${totalBet}, have ${current}`,
-      { required: totalBet, current }
-    );
-  }
-
-  // 5. Validate nonce
-  const expectedNonce = balanceRecord.lastNonce + 1;
-  if (input.nonce !== expectedNonce) {
-    return err(
-      ErrorCode.INVALID_NONCE,
-      `Invalid nonce: expected ${expectedNonce}, got ${input.nonce}. Try refreshing the page.`,
-      { expectedNonce, receivedNonce: input.nonce }
-    );
-  }
-
-  // 6. Generate spin result (pure computation)
+  // 4. Generate spin result (pure computation)
   const hmac = computeHmac(serverSeedRecord.seed, input.clientSeed, input.nonce);
   const number = hashToNumber(hmac);
   const color = number === 0 ? "green" : redNumbers.has(number) ? "red" : "black";
 
-  // 7. Calculate winnings (pure computation)
+  // 5. Calculate winnings (pure computation)
   let totalWin = 0;
   for (const bet of input.bets) {
     totalWin += calculateWinnings(bet, { number, color });
   }
 
-  const newBalance = Number(balanceRecord.balance) - totalBet + totalWin;
   const spinId = crypto.randomBytes(16).toString("hex");
 
-  // 8. Persist everything in a single transaction
+  // 6. Persist everything in a single transaction
   const betInserts: BetInsert[] = input.bets.map((bet) => ({
     id: crypto.randomBytes(16).toString("hex"),
     spinId,
@@ -221,7 +231,7 @@ export async function executeSpin(
     win: calculateWinnings(bet, { number, color }).toString(),
   }));
 
-  await createSpinWithBets(
+  const txResult = await createSpinWithBets(
     {
       id: spinId,
       userId,
@@ -233,20 +243,28 @@ export async function executeSpin(
       color,
       totalBet: totalBet.toString(),
       totalWin: totalWin.toString(),
-      idempotencyKey: input.idempotencyKey || null,
+      idempotencyKey: input.idempotencyKey,
     },
     betInserts,
     userId,
-    newBalance.toString(),
+    totalBet,
+    totalWin,
     input.nonce,
   );
 
-  // 9. Return result
+  if ("insufficientFunds" in txResult) {
+    return err(ErrorCode.INSUFFICIENT_FUNDS, "Insufficient funds");
+  }
+  if ("invalidNonce" in txResult) {
+    return err(ErrorCode.INVALID_NONCE, "Invalid nonce. Try refreshing the page.");
+  }
+
+  // 7. Return result
   return ok({
     result: { number, color: color as "red" | "black" | "green" },
     totalWin,
     totalBet,
-    newBalance,
+    newBalance: txResult.newBalance,
     provablyFair: {
       clientSeed: input.clientSeed,
       serverSeedHash: serverSeedRecord.hash,

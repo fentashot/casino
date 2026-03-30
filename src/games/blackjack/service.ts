@@ -8,11 +8,14 @@
 
 import { type Result, ok, err, ErrorCode } from "../../lib/errors";
 import { db } from "../../db/postgres";
-import { blackjackRound } from "../../db/schema";
+import { blackjackRound, blackjackActiveGame, userBalance } from "../../db/schema";
 import { balanceQueries } from "../../db/queries";
 import * as crypto from "crypto";
+import { eq, sql } from "drizzle-orm";
 import type { BlackjackGameState } from "./engine";
 import {
+  hydrateShoe,
+  persistShoe,
   dealGame,
   resolveInsurance,
   hitHand,
@@ -29,7 +32,6 @@ import {
   getShoeInfo,
   canSplit,
   markPersisted,
-  isPersisted,
 } from "./engine";
 import type { GameStateResult, ShoeInfoResult, HandSnapshot } from "./types";
 
@@ -47,6 +49,8 @@ type PlayerAction = "hit" | "stand" | "double" | "split";
 export async function getState(
   userId: string,
 ): Promise<Result<GameStateResult>> {
+  await hydrateShoe(userId);
+
   // Check for active (non-finished) game
   const active = await getActiveGame(userId);
   if (active) {
@@ -73,28 +77,81 @@ export async function deal(
   userId: string,
   bet: number,
 ): Promise<Result<GameStateResult>> {
-  // Refuse if active game exists
-  if (await getActiveGame(userId)) {
+  await hydrateShoe(userId);
+
+  const txResult = await db.transaction(async (tx) => {
+    await tx
+      .insert(userBalance)
+      .values({ userId, balance: "100000.00", lastNonce: 0 })
+      .onConflictDoNothing();
+
+    const lockedBalance = await tx.execute(
+      sql`SELECT balance FROM user_balance
+          WHERE user_id = ${userId}
+          FOR UPDATE`,
+    );
+    if (lockedBalance.length === 0) {
+      return { errorCode: ErrorCode.INTERNAL_ERROR } as const;
+    }
+
+    const existingGame = await tx.query.blackjackActiveGame.findFirst({
+      where: eq(blackjackActiveGame.userId, userId),
+      columns: { state: true },
+    });
+    if (
+      existingGame &&
+      typeof existingGame.state === "object" &&
+      existingGame.state !== null &&
+      (existingGame.state as { phase?: string }).phase !== "finished"
+    ) {
+      return { errorCode: ErrorCode.ACTIVE_GAME_EXISTS } as const;
+    }
+
+    const currentBalance = Number((lockedBalance[0] as any).balance);
+    if (currentBalance < bet) {
+      return { errorCode: ErrorCode.INSUFFICIENT_FUNDS } as const;
+    }
+
+    const nextGame = dealGame(bet, currentBalance, userId);
+
+    await tx
+      .update(userBalance)
+      .set({ balance: nextGame.balance.toString() })
+      .where(eq(userBalance.userId, userId));
+
+    await tx
+      .insert(blackjackActiveGame)
+      .values({
+        userId,
+        gameId: nextGame.id,
+        state: nextGame,
+        persisted: false,
+      })
+      .onConflictDoUpdate({
+        target: blackjackActiveGame.userId,
+        set: {
+          gameId: nextGame.id,
+          state: nextGame,
+          persisted: false,
+          updatedAt: new Date(),
+        },
+      });
+
+    return { game: nextGame };
+  });
+
+  if ("errorCode" in txResult && txResult.errorCode === ErrorCode.ACTIVE_GAME_EXISTS) {
     return err(ErrorCode.ACTIVE_GAME_EXISTS, "Finish or clear your current game first");
   }
-
-  const { balance: currentBalance } = await findOrCreateBalance(userId);
-
-  if (currentBalance < bet) {
-    return err(
-      ErrorCode.INSUFFICIENT_FUNDS,
-      `Insufficient funds: need ${bet}, have ${currentBalance}`,
-      { required: bet, current: currentBalance }
-    );
+  if ("errorCode" in txResult && txResult.errorCode === ErrorCode.INSUFFICIENT_FUNDS) {
+    return err(ErrorCode.INSUFFICIENT_FUNDS, "Insufficient funds");
+  }
+  if ("errorCode" in txResult && txResult.errorCode === ErrorCode.INTERNAL_ERROR) {
+    return err(ErrorCode.INTERNAL_ERROR, "Failed to start game");
   }
 
-  const game = dealGame(bet, currentBalance, userId);
-
-  // Persist deducted balance immediately
-  await syncBalance(userId, game.balance);
-  await saveGame(game);
-
-  return ok({ game: sanitizeGame(game) });
+  await persistShoe(userId);
+  return ok({ game: sanitizeGame(txResult.game) });
 }
 
 /* ============================================================================
@@ -116,6 +173,7 @@ export async function handleInsurance(
 
   let updated: BlackjackGameState;
   try {
+    await hydrateShoe(userId);
     updated = resolveInsurance(game, decision);
   } catch (e) {
     return err(ErrorCode.INSUFFICIENT_FUNDS, (e as Error).message);
@@ -128,6 +186,7 @@ export async function handleInsurance(
   }
 
   await saveGame(updated);
+  await persistShoe(userId);
   return ok({ game: sanitizeGame(updated) });
 }
 
@@ -168,6 +227,7 @@ export async function handleAction(
   // Execute action (pure logic)
   let updated: BlackjackGameState;
   try {
+    await hydrateShoe(userId);
     updated = executeAction(action, game);
   } catch (e) {
     return err(ErrorCode.VALIDATION_ERROR, (e as Error).message);
@@ -188,6 +248,7 @@ export async function handleAction(
   }
 
   await saveGame(updated);
+  await persistShoe(userId);
   return ok({ game: sanitizeGame(updated) });
 }
 
@@ -213,8 +274,8 @@ export async function clearFinishedGame(
    Shoe Info
    ============================================================================ */
 
-export function getShoeInfoForUser(userId: string): Result<ShoeInfoResult> {
-  const info = getShoeInfo(userId);
+export async function getShoeInfoForUser(userId: string): Promise<Result<ShoeInfoResult>> {
+  const info = await getShoeInfo(userId);
   if (!info) {
     return ok({ cardsRemaining: null, penetration: null });
   }
@@ -229,12 +290,6 @@ async function syncBalance(userId: string, newBalance: number): Promise<void> {
   await balanceQueries.updateBalance(userId, newBalance);
 }
 
-async function findOrCreateBalance(
-  userId: string,
-): Promise<{ balance: number }> {
-  return balanceQueries.findOrCreateBalance(userId);
-}
-
 /* ============================================================================
    Internal Helpers — Round Persistence (inlined from blackjackRound.repository.ts)
    ============================================================================ */
@@ -243,11 +298,6 @@ async function persistRound(
   userId: string,
   game: BlackjackGameState,
 ): Promise<void> {
-  // markPersisted is called BEFORE the DB insert so that concurrent paths
-  // racing here see the flag immediately and bail out without a second write.
-  if (await isPersisted(game.id)) return;
-  await markPersisted(game.id);
-
   let totalBet = 0;
   let totalWin = 0;
 
@@ -274,12 +324,15 @@ async function persistRound(
 
   await db.insert(blackjackRound).values({
     id: crypto.randomBytes(16).toString("hex"),
+    gameId: game.id,
     userId,
     totalBet: totalBet.toString(),
     totalWin: totalWin.toString(),
     handsSnapshot,
     balanceAfter: game.balance.toString(),
-  });
+  }).onConflictDoNothing({ target: blackjackRound.gameId });
+
+  await markPersisted(game.id);
 }
 
 /* ============================================================================

@@ -4,11 +4,27 @@ import { db } from "./db/postgres";
 import { createMiddleware } from "hono/factory";
 import { user as userTable, type UserRole } from "./db/schema";
 
+function parseTrustedOrigins(): string[] {
+    const configured = (process.env.TRUSTED_ORIGINS ?? "")
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter((origin) => origin.length > 0);
+
+    if (configured.length > 0) return configured;
+
+    const fallback = ["http://localhost:3000", "http://127.0.0.1:3000", "http://0.0.0.0:3000"];
+    const betterAuthUrl = process.env.BETTER_AUTH_URL?.trim();
+    if (betterAuthUrl && !fallback.includes(betterAuthUrl)) {
+        fallback.push(betterAuthUrl);
+    }
+    return fallback;
+}
+
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
         provider: "pg",
     }),
-    trustedOrigins: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    trustedOrigins: parseTrustedOrigins(),
     basePath: "/api/auth",
     emailAndPassword: {
         enabled: true,

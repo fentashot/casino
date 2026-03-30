@@ -90,10 +90,16 @@ export class AppError extends Error {
   }
 
   toJSON() {
+    const isProduction = process.env.NODE_ENV === "production";
+    const safeMessage =
+      !isProduction && this.message !== this.code
+        ? { message: this.message }
+        : {};
+
     return {
       error: this.code,
-      ...(this.message !== this.code ? { message: this.message } : {}),
-      ...(this.details ? { details: this.details } : {}),
+      ...safeMessage,
+      ...(!isProduction && this.details ? { details: this.details } : {}),
     };
   }
 }

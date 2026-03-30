@@ -59,6 +59,8 @@ export {
   getOrBuildShoe,
   drawFromShoe,
   getShoeInfo,
+  hydrateShoe,
+  persistShoe,
   clearShoe,
   getShoeCount,
 } from "./shoeManager";
@@ -70,5 +72,4 @@ export {
   saveGame,
   clearGame,
   markPersisted,
-  isPersisted,
 } from "./gameStore";
