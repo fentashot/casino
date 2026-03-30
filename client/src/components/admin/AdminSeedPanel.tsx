@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 interface Seed {
 	id: string;
@@ -42,25 +43,20 @@ export function AdminSeedPanel() {
 	// Fetch seeds list
 	const { data, isLoading, error } = useQuery<SeedsResponse>({
 		queryKey: ["admin-seeds"],
-		queryFn: async () => {
-			const res = await api.casino.seeds.$get();
-			if (!res.ok) throw new Error("Failed to fetch seeds");
-			return res.json();
-		},
+		queryFn: () =>
+			apiRequest<SeedsResponse>(
+				api.casino.seeds.$get(),
+				"Failed to fetch seeds",
+			),
 	});
 
 	// Rotate seed mutation
 	const rotateMutation = useMutation({
-		mutationFn: async () => {
-			const res = await api.casino.rotate.$post();
-			if (!res.ok) {
-				const error = await res.json();
-				throw new Error(
-					(error as { error?: string }).error || "Failed to rotate seed",
-				);
-			}
-			return res.json() as Promise<{ newSeedHash: string }>;
-		},
+		mutationFn: () =>
+			apiRequest<{ newSeedHash: string }>(
+				api.casino.rotate.$post(),
+				"Failed to rotate seed",
+			),
 		onSuccess: (data) => {
 			queryClient.invalidateQueries({ queryKey: ["admin-seeds"] });
 			queryClient.invalidateQueries({ queryKey: ["server-seed-hash"] });
@@ -82,14 +78,10 @@ export function AdminSeedPanel() {
 	// Reveal seed mutation
 	const revealMutation = useMutation({
 		mutationFn: async (seedId: string) => {
-			const res = await api.casino.reveal.$post({ json: { seedId } });
-			if (!res.ok) {
-				const error = await res.json();
-				throw new Error(
-					(error as { error?: string }).error || "Failed to reveal seed",
-				);
-			}
-			const data = (await res.json()) as { seed: string };
+			const data = await apiRequest<{ seed: string }>(
+				api.casino.reveal.$post({ json: { seedId } }),
+				"Failed to reveal seed",
+			);
 			return { seedId, ...data };
 		},
 		onSuccess: (data) => {

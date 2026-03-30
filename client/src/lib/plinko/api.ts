@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { apiRequest } from "@/lib/api-error";
 
 export type Difficulty = "low" | "medium" | "high" | "expert";
 
@@ -19,10 +20,8 @@ export interface PlinkoPlayResult {
 export async function playPlinko(
 	req: PlinkoPlayRequest,
 ): Promise<PlinkoPlayResult> {
-	const res = await api.plinko.play.$post({ json: req });
-	if (!res.ok) {
-		const err = await res.json().catch(() => ({}));
-		throw new Error((err as { error?: string }).error ?? "Play failed");
-	}
-	return res.json() as Promise<PlinkoPlayResult>;
+	return apiRequest<PlinkoPlayResult>(
+		api.plinko.play.$post({ json: req }),
+		"Play failed",
+	);
 }

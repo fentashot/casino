@@ -9,7 +9,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { api } from "@/lib/api";
+import { api, apiRequest, readApiData } from "@/lib/api";
 import { playWinSound } from "@/lib/audio";
 import { canSplitHand } from "./cardHelpers";
 import {
@@ -75,9 +75,10 @@ export function useBlackjack(initialBalance = 0) {
 	}>({
 		queryKey: ["casino-balance"],
 		queryFn: async (): Promise<{ balance: number }> => {
-			const res = await api.casino.balance.$get();
-			if (!res.ok) throw new Error("Failed to fetch balance");
-			return (await res.json()) as { balance: number };
+			return apiRequest<{ balance: number }>(
+				api.casino.balance.$get(),
+				"Failed to fetch balance",
+			);
 		},
 		initialData: { balance: initialBalance },
 		staleTime: 5000,
@@ -232,12 +233,10 @@ export function useBlackjack(initialBalance = 0) {
 	const restoreGame = useCallback(async () => {
 		try {
 			const res = await api.blackjack.state.$get();
-			const data = (await res.json()) as
-				| { game: BlackjackGameState | null }
-				| { error: string };
-			if ("error" in data) {
-				return;
-			}
+			const data = await readApiData<{ game: BlackjackGameState | null }>(
+				res,
+				"Failed to restore game",
+			);
 			if (data.game) {
 				setServerGame(data.game);
 				restoreDisplayState(data.game);
@@ -253,9 +252,10 @@ export function useBlackjack(initialBalance = 0) {
 	const { data: shoeInfo } = useQuery<ShoeInfo>({
 		queryKey: ["blackjack-shoe"],
 		queryFn: async (): Promise<ShoeInfo> => {
-			const res = await api.blackjack["shoe-info"].$get();
-			if (!res.ok) throw new Error("Failed to fetch shoe info");
-			return (await res.json()) as ShoeInfo;
+			return apiRequest<ShoeInfo>(
+				api.blackjack["shoe-info"].$get(),
+				"Failed to fetch shoe info",
+			);
 		},
 		refetchInterval: 30_000,
 		staleTime: 30_000,

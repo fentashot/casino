@@ -1,127 +1,115 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
-import { api } from "@/lib/api";
+import { api, apiRequest } from "@/lib/api";
+import type { PlinkoPlayResult } from "@/lib/plinko/api";
 import { fetchBalance } from "@/lib/roulette/api";
 import type { Difficulty } from "./multipliers";
 
 export interface PlinkoResult {
-  multiplier: number;
-  win: number;
-  bucket: number;
+	multiplier: number;
+	win: number;
+	bucket: number;
 }
 
 export function usePlinkoGame() {
-  const queryClient = useQueryClient();
+	const queryClient = useQueryClient();
 
-  const { data: balanceData } = useQuery({
-    queryKey: ["casino-balance"],
-    queryFn: fetchBalance,
-    staleTime: 5000,
-  });
-  const balance = balanceData?.balance ?? 0;
+	const { data: balanceData } = useQuery({
+		queryKey: ["casino-balance"],
+		queryFn: fetchBalance,
+		staleTime: 5000,
+	});
+	const balance = balanceData?.balance ?? 0;
 
-  const [bet, setBet] = useState(100);
-  const [rows, setRows] = useState(16);
-  const [difficulty, setDifficulty] = useState<Difficulty>("expert");
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [lastResult, setLastResult] = useState<PlinkoResult | null>(null);
-  const [ballPath, setBallPath] = useState<number[] | null>(null);
-  const [showResult, setShowResult] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+	const [bet, setBet] = useState(100);
+	const [rows, setRows] = useState(16);
+	const [difficulty, setDifficulty] = useState<Difficulty>("expert");
+	const [isPlaying, setIsPlaying] = useState(false);
+	const [lastResult, setLastResult] = useState<PlinkoResult | null>(null);
+	const [ballPath, setBallPath] = useState<number[] | null>(null);
+	const [showResult, setShowResult] = useState(false);
+	const [error, setError] = useState<string | null>(null);
 
-  // Consumed by the canvas hook to trigger the highlight after animation
-  const pendingResultRef = useRef<PlinkoResult | null>(null);
+	// Consumed by the canvas hook to trigger the highlight after animation
+	const pendingResultRef = useRef<PlinkoResult | null>(null);
 
-  const changeRows = (next: number) => {
-    setRows(next);
-    setBallPath(null);
-    setLastResult(null);
-    setShowResult(false);
-    setError(null);
-  };
+	const changeRows = (next: number) => {
+		setRows(next);
+		setBallPath(null);
+		setLastResult(null);
+		setShowResult(false);
+		setError(null);
+	};
 
-  const onAnimationComplete = useCallback(() => {
-    const result = pendingResultRef.current;
-    if (!result) return;
-    setLastResult(result);
-    setShowResult(true);
-    setIsPlaying(false);
-  }, []);
+	const onAnimationComplete = useCallback(() => {
+		const result = pendingResultRef.current;
+		if (!result) return;
+		setLastResult(result);
+		setShowResult(true);
+		setIsPlaying(false);
+	}, []);
 
-  const play = async () => {
-    if (isPlaying) return;
-    setIsPlaying(true);
-    setLastResult(null);
-    setShowResult(false);
-    setBallPath(null);
-    setError(null);
-    pendingResultRef.current = null;
+	const play = async () => {
+		if (isPlaying) return;
+		setIsPlaying(true);
+		setLastResult(null);
+		setShowResult(false);
+		setBallPath(null);
+		setError(null);
+		pendingResultRef.current = null;
 
-    try {
-      const res = await api.plinko.play.$post({
-        json: { bet, rows, difficulty },
-      });
+		try {
+			const result = await apiRequest<PlinkoPlayResult>(
+				api.plinko.play.$post({
+					json: { bet, rows, difficulty },
+				}),
+				"Something went wrong. Please try again.",
+			);
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        const message =
-          "error" in errorData
-            ? errorData.error
-            : "Something went wrong. Please try again.";
-        throw new Error(message);
-      }
+			queryClient.setQueryData(["casino-balance"], { balance: result.balance });
 
-      const result = await res.json();
+			pendingResultRef.current = {
+				multiplier: result.multiplier,
+				win: result.win,
+				bucket: result.finalBucket,
+			};
+			setBallPath(result.path);
+		} catch (e: unknown) {
+			const message =
+				e instanceof Error
+					? e.message
+					: "Something went wrong. Please try again.";
+			setError(message);
+			setIsPlaying(false);
+		}
+	};
 
-      // Type guard: ensure we have the success response
-      if (!("balance" in result)) {
-        throw new Error("Invalid response from server");
-      }
+	const isAnimating = ballPath !== null && !showResult;
+	const canPlay =
+		!isPlaying && !isAnimating && bet > 0 && bet <= balance && !error;
+	const activeBucketIdx = lastResult?.bucket ?? null;
 
-      queryClient.setQueryData(["casino-balance"], { balance: result.balance });
-
-      pendingResultRef.current = {
-        multiplier: result.multiplier,
-        win: result.win,
-        bucket: result.finalBucket,
-      };
-      setBallPath(result.path);
-    } catch (e: unknown) {
-      const message =
-        e instanceof Error
-          ? e.message
-          : "Something went wrong. Please try again.";
-      setError(message);
-      setIsPlaying(false);
-    }
-  };
-
-  const isAnimating = ballPath !== null && !showResult;
-  const canPlay =
-    !isPlaying && !isAnimating && bet > 0 && bet <= balance && !error;
-  const activeBucketIdx = lastResult?.bucket ?? null;
-
-  return {
-    // config
-    bet,
-    setBet,
-    rows,
-    changeRows,
-    difficulty,
-    setDifficulty,
-    // state
-    balance,
-    isPlaying,
-    isAnimating,
-    canPlay,
-    lastResult,
-    showResult,
-    activeBucketIdx,
-    error,
-    clearError: () => setError(null),
-    // animation bridge
-    ballPath,
-    onAnimationComplete,
-    play,
-  };
+	return {
+		// config
+		bet,
+		setBet,
+		rows,
+		changeRows,
+		difficulty,
+		setDifficulty,
+		// state
+		balance,
+		isPlaying,
+		isAnimating,
+		canPlay,
+		lastResult,
+		showResult,
+		activeBucketIdx,
+		error,
+		clearError: () => setError(null),
+		// animation bridge
+		ballPath,
+		onAnimationComplete,
+		play,
+	};
 }

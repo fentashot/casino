@@ -13,7 +13,7 @@ import type {
 	RecentResponse,
 	StatsOverview,
 } from "@/games/stats/types";
-import { api } from "@/lib/api";
+import { api, apiRequest } from "@/lib/api";
 
 /* ── Shared query options ────────────────────────────────────────────────── */
 
@@ -29,9 +29,10 @@ export function useStatsOverview() {
 	return useQuery<StatsOverview>({
 		queryKey: ["stats-overview"],
 		queryFn: async () => {
-			const res = await api.stats.overview.$get();
-			if (!res.ok) throw new Error("Failed to fetch stats overview");
-			return res.json();
+			return apiRequest<StatsOverview>(
+				api.stats.overview.$get(),
+				"Failed to fetch stats overview",
+			);
 		},
 		staleTime: STALE_MS,
 		// Always refetch when the stats page mounts so the dashboard shows fresh data
@@ -47,11 +48,12 @@ export function useBalanceHistory(limit = 200) {
 	return useQuery<BalanceHistoryResponse>({
 		queryKey: ["stats-balance-history", limit],
 		queryFn: async () => {
-			const res = await api.stats["balance-history"].$get({
-				query: { limit: limit.toString() },
-			});
-			if (!res.ok) throw new Error("Failed to fetch balance history");
-			return res.json();
+			return apiRequest<BalanceHistoryResponse>(
+				api.stats["balance-history"].$get({
+					query: { limit: limit.toString() },
+				}),
+				"Failed to fetch balance history",
+			);
 		},
 		staleTime: STALE_MS,
 		// Ensure the chart refreshes whenever the user navigates to the stats page
@@ -67,11 +69,12 @@ export function useDailyStats(days = 30) {
 	return useQuery<DailyResponse>({
 		queryKey: ["stats-daily", days],
 		queryFn: async () => {
-			const res = await api.stats.daily.$get({
-				query: { days: days.toString() },
-			});
-			if (!res.ok) throw new Error("Failed to fetch daily stats");
-			return res.json();
+			return apiRequest<DailyResponse>(
+				api.stats.daily.$get({
+					query: { days: days.toString() },
+				}),
+				"Failed to fetch daily stats",
+			);
 		},
 		staleTime: STALE_MS,
 		// Always refetch on mount so period changes / re-entry show latest data
@@ -84,9 +87,10 @@ export function useHourlyHeatmap() {
 	return useQuery<HourlyHeatmapResponse>({
 		queryKey: ["stats-hourly-heatmap"],
 		queryFn: async () => {
-			const res = await api.stats.hourly.$get();
-			if (!res.ok) throw new Error("Failed to fetch hourly heatmap");
-			return res.json();
+			return apiRequest<HourlyHeatmapResponse>(
+				api.stats.hourly.$get(),
+				"Failed to fetch hourly heatmap",
+			);
 		},
 		staleTime: STALE_MS,
 		refetchOnMount: "always",
@@ -98,9 +102,10 @@ export function useGameBreakdown() {
 	return useQuery<GameBreakdownResponse>({
 		queryKey: ["stats-game-breakdown"],
 		queryFn: async () => {
-			const res = await api.stats["game-breakdown"].$get();
-			if (!res.ok) throw new Error("Failed to fetch game breakdown");
-			return res.json();
+			return apiRequest<GameBreakdownResponse>(
+				api.stats["game-breakdown"].$get(),
+				"Failed to fetch game breakdown",
+			);
 		},
 		staleTime: STALE_MS,
 		refetchOnMount: "always",
@@ -115,11 +120,12 @@ export function useRecentRounds(limit = 20) {
 	return useQuery<RecentResponse>({
 		queryKey: ["stats-recent", limit],
 		queryFn: async () => {
-			const res = await api.stats.recent.$get({
-				query: { limit: limit.toString() },
-			});
-			if (!res.ok) throw new Error("Failed to fetch recent rounds");
-			return res.json();
+			return apiRequest<RecentResponse>(
+				api.stats.recent.$get({
+					query: { limit: limit.toString() },
+				}),
+				"Failed to fetch recent rounds",
+			);
 		},
 		staleTime: STALE_MS,
 		// Recent rounds should be up-to-date whenever user opens the stats page

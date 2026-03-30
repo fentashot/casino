@@ -85,6 +85,8 @@ export interface GameResponse {
 /** Error response from any blackjack API endpoint */
 export interface ErrorResponse {
 	error: string;
+	message?: string;
+	details?: Record<string, unknown>;
 }
 
 /** Union type for API responses that return a game or an error */
