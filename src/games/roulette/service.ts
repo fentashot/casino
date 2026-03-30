@@ -211,16 +211,16 @@ export async function revealSeed(
   seedId: string | undefined,
 ): Promise<Result<RevealSeedResult>> {
   if (!seedId) {
-    return err(ErrorCode.MISSING_SEED_ID);
+    return err(ErrorCode.MISSING_SEED_ID, "Seed ID is required to reveal");
   }
 
   const seedRecord = await findSeedById(seedId);
   if (!seedRecord) {
-    return err(ErrorCode.SEED_NOT_FOUND);
+    return err(ErrorCode.SEED_NOT_FOUND, `Seed ${seedId} not found`);
   }
 
   if (seedRecord.active) {
-    return err(ErrorCode.SEED_STILL_ACTIVE);
+    return err(ErrorCode.SEED_STILL_ACTIVE, "Cannot reveal an active seed — rotate first");
   }
 
   await markSeedRevealed(seedId);
@@ -263,7 +263,7 @@ export async function executeSpin(
   // 2. Get active server seed
   const serverSeedRecord = await findActiveSeed();
   if (!serverSeedRecord) {
-    return err(ErrorCode.NO_ACTIVE_SEED);
+    return err(ErrorCode.NO_ACTIVE_SEED, "No active server seed — contact support");
   }
 
   // 3. Calculate total bet
@@ -272,16 +272,22 @@ export async function executeSpin(
   // 4. Check user balance
   const balanceRecord = await findBalanceByUserId(userId);
   if (!balanceRecord || Number(balanceRecord.balance) < totalBet) {
-    return err(ErrorCode.INSUFFICIENT_FUNDS);
+    const current = balanceRecord ? Number(balanceRecord.balance) : 0;
+    return err(
+      ErrorCode.INSUFFICIENT_FUNDS,
+      `Insufficient funds: need ${totalBet}, have ${current}`,
+      { required: totalBet, current }
+    );
   }
 
   // 5. Validate nonce
   const expectedNonce = balanceRecord.lastNonce + 1;
   if (input.nonce !== expectedNonce) {
-    return err(ErrorCode.INVALID_NONCE, "invalid_nonce", {
-      expectedNonce,
-      receivedNonce: input.nonce,
-    });
+    return err(
+      ErrorCode.INVALID_NONCE,
+      `Invalid nonce: expected ${expectedNonce}, got ${input.nonce}. Try refreshing the page.`,
+      { expectedNonce, receivedNonce: input.nonce }
+    );
   }
 
   // 6. Generate spin result (pure computation)

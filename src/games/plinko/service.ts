@@ -29,7 +29,11 @@ export async function play(
   const { balance: currentBalance } = await findOrCreateBalance(userId);
 
   if (currentBalance < bet) {
-    return err(ErrorCode.INSUFFICIENT_FUNDS);
+    return err(
+      ErrorCode.INSUFFICIENT_FUNDS,
+      `Insufficient funds: need ${bet}, have ${currentBalance}`,
+      { required: bet, current: currentBalance }
+    );
   }
 
   // Generate a random seed for this drop

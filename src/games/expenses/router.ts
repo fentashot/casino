@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { createExpenseSchema } from "../../zodTypes";
+import { createExpenseSchema, expenseIdSchema } from "../../zodTypes";
 import type { User, Vars } from "../../types";
 import { mapResultToResponse, mapResultToResponseWithStatus } from "../../lib/errors";
 import * as ExpenseService from "./service";
@@ -20,8 +20,8 @@ export const expensesRouter = new Hono<Vars>()
         return mapResultToResponseWithStatus(c, result, 201);
     })
 
-    .delete("/:id", async (c) => {
-        const id = Number(c.req.param("id"));
+    .delete("/:id", zValidator("param", expenseIdSchema), async (c) => {
+        const { id } = c.req.valid("param");
         const result = await ExpenseService.deleteExpense(id);
         return mapResultToResponse(c, result);
     })

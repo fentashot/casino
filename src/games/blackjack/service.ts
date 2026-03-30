@@ -51,17 +51,17 @@ export async function getState(
   userId: string,
 ): Promise<Result<GameStateResult>> {
   // Check for active (non-finished) game
-  const active = getActiveGame(userId);
+  const active = await getActiveGame(userId);
   if (active) {
     return ok({ game: sanitizeGame(active) });
   }
 
   // Check for finished game to return once (UI continuity)
-  const finished = getGameForUser(userId);
+  const finished = await getGameForUser(userId);
   if (finished && finished.phase === "finished") {
     await persistRound(userId, finished);
     await syncBalance(userId, finished.balance);
-    clearGame(userId);
+    await clearGame(userId);
     return ok({ game: sanitizeGame(finished) });
   }
 
@@ -77,21 +77,25 @@ export async function deal(
   bet: number,
 ): Promise<Result<GameStateResult>> {
   // Refuse if active game exists
-  if (getActiveGame(userId)) {
-    return err(ErrorCode.ACTIVE_GAME_EXISTS);
+  if (await getActiveGame(userId)) {
+    return err(ErrorCode.ACTIVE_GAME_EXISTS, "Finish or clear your current game first");
   }
 
   const { balance: currentBalance } = await findOrCreateBalance(userId);
 
   if (currentBalance < bet) {
-    return err(ErrorCode.INSUFFICIENT_FUNDS);
+    return err(
+      ErrorCode.INSUFFICIENT_FUNDS,
+      `Insufficient funds: need ${bet}, have ${currentBalance}`,
+      { required: bet, current: currentBalance }
+    );
   }
 
   const game = dealGame(bet, currentBalance, userId);
 
   // Persist deducted balance immediately
   await syncBalance(userId, game.balance);
-  saveGame(game);
+  await saveGame(game);
 
   return ok({ game: sanitizeGame(game) });
 }
@@ -104,7 +108,7 @@ export async function handleInsurance(
   userId: string,
   decision: InsuranceDecision,
 ): Promise<Result<GameStateResult>> {
-  const game = getActiveGame(userId);
+  const game = await getActiveGame(userId);
   if (!game) {
     return err(ErrorCode.NO_ACTIVE_GAME);
   }
@@ -126,7 +130,7 @@ export async function handleInsurance(
     await persistRound(userId, updated);
   }
 
-  saveGame(updated);
+  await saveGame(updated);
   return ok({ game: sanitizeGame(updated) });
 }
 
@@ -138,7 +142,7 @@ export async function handleAction(
   userId: string,
   action: PlayerAction,
 ): Promise<Result<GameStateResult>> {
-  const game = getActiveGame(userId);
+  const game = await getActiveGame(userId);
   if (!game) {
     return err(ErrorCode.NO_ACTIVE_GAME);
   }
@@ -186,7 +190,7 @@ export async function handleAction(
     await persistRound(userId, updated);
   }
 
-  saveGame(updated);
+  await saveGame(updated);
   return ok({ game: sanitizeGame(updated) });
 }
 
@@ -197,14 +201,14 @@ export async function handleAction(
 export async function clearFinishedGame(
   userId: string,
 ): Promise<Result<{ ok: true }>> {
-  const game = getGameForUser(userId);
+  const game = await getGameForUser(userId);
   if (game && game.phase === "finished") {
     // persistRound is idempotent — safe to call even if already persisted.
     await persistRound(userId, game);
     await syncBalance(userId, game.balance);
   }
 
-  clearGame(userId);
+  await clearGame(userId);
   return ok({ ok: true });
 }
 
@@ -259,13 +263,10 @@ async function persistRound(
   userId: string,
   game: BlackjackGameState,
 ): Promise<void> {
-  // The persisted flag lives in the store (a Set<gameId>), not on the value
-  // object. This prevents saveGame() from accidentally clobbering the flag
-  // when the caller updates and re-saves the game after this function runs.
-  // We call markPersisted BEFORE the DB insert so that any concurrent path
-  // racing here sees the flag immediately and bails out without a second write.
-  if (isPersisted(game.id)) return;
-  markPersisted(game.id);
+  // markPersisted is called BEFORE the DB insert so that concurrent paths
+  // racing here see the flag immediately and bail out without a second write.
+  if (await isPersisted(game.id)) return;
+  await markPersisted(game.id);
 
   let totalBet = 0;
   let totalWin = 0;

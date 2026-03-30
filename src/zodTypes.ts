@@ -47,3 +47,8 @@ export const spinRequestSchema = z.object({
   nonce: z.number().int().nonnegative(),
   idempotencyKey: z.string().min(16).max(64).optional(),
 });
+
+// Expense ID validation (used in routes)
+export const expenseIdSchema = z.object({
+  id: z.coerce.number().int().positive("ID must be a positive number"),
+});
