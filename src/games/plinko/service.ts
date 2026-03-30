@@ -12,6 +12,7 @@ import { balanceQueries } from "../../db/queries";
 import * as crypto from "crypto";
 import { eq, sql } from "drizzle-orm";
 import { dropBall, type Difficulty } from "./engine";
+import { hasActiveBlackjackGame } from "../blackjack/engine";
 import type { PlinkoPlayResult } from "./types";
 
 /* ============================================================================
@@ -39,7 +40,12 @@ export async function play(
     });
   }
 
-  // 2. Ensure balance row exists for new users
+  // 2. Block play while a blackjack game is active
+  if (await hasActiveBlackjackGame(userId)) {
+    return err(ErrorCode.ACTIVE_GAME_EXISTS, "Finish your blackjack game first");
+  }
+
+  // 3. Ensure balance row exists for new users
   await balanceQueries.findOrCreateBalance(userId);
 
   // 3. Compute result before transaction (pure — does not touch DB)

@@ -12,6 +12,7 @@ import { casinoSpin, casinoBet, casinoServerSeed, userBalance } from "../../db/s
 import { eq, desc, sql } from "drizzle-orm";
 import { balanceQueries, seedQueries } from "../../db/queries";
 import { calculateWinnings, computeHmac, hashToNumber, redNumbers } from "../../lib/casinoHelpers";
+import { hasActiveBlackjackGame } from "../blackjack/engine";
 import type { SpinResponse } from "../../types";
 import type {
   SeedHashResult,
@@ -197,21 +198,26 @@ export async function executeSpin(
   const cached = await checkIdempotency(userId, input.idempotencyKey);
   if (cached) return ok(cached);
 
-  // 2. Get active server seed
+  // 2. Block spin while a blackjack game is active
+  if (await hasActiveBlackjackGame(userId)) {
+    return err(ErrorCode.ACTIVE_GAME_EXISTS, "Finish your blackjack game first");
+  }
+
+  // 3. Get active server seed
   const serverSeedRecord = await seedQueries.findActive();
   if (!serverSeedRecord) {
     return err(ErrorCode.NO_ACTIVE_SEED, "No active server seed — contact support");
   }
 
-  // 3. Calculate total bet
+  // 4. Calculate total bet
   const totalBet = input.bets.reduce((sum, bet) => sum + bet.amount, 0);
 
-  // 4. Generate spin result (pure computation)
+  // 5. Generate spin result (pure computation)
   const hmac = computeHmac(serverSeedRecord.seed, input.clientSeed, input.nonce);
   const number = hashToNumber(hmac);
   const color = number === 0 ? "green" : redNumbers.has(number) ? "red" : "black";
 
-  // 5. Calculate winnings (pure computation)
+  // 6. Calculate winnings (pure computation)
   let totalWin = 0;
   for (const bet of input.bets) {
     totalWin += calculateWinnings(bet, { number, color });
@@ -219,7 +225,7 @@ export async function executeSpin(
 
   const spinId = crypto.randomBytes(16).toString("hex");
 
-  // 6. Persist everything in a single transaction
+  // 7. Persist everything in a single transaction
   const betInserts: BetInsert[] = input.bets.map((bet) => ({
     id: crypto.randomBytes(16).toString("hex"),
     spinId,

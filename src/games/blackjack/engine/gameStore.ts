@@ -18,6 +18,20 @@ import type { BlackjackGameState } from "./types";
    ============================================================================ */
 
 /**
+ * Returns true if the user has an active (non-finished) blackjack game.
+ * Lightweight check used by other game services to block concurrent play.
+ */
+export async function hasActiveBlackjackGame(userId: string): Promise<boolean> {
+  const row = await db.query.blackjackActiveGame.findFirst({
+    where: eq(blackjackActiveGame.userId, userId),
+    columns: { state: true },
+  });
+  if (!row) return false;
+  const phase = (row.state as { phase?: string }).phase;
+  return phase !== undefined && phase !== "finished";
+}
+
+/**
  * Get the active (non-finished) game for a user, or undefined if none exists.
  */
 export async function getActiveGame(

@@ -107,3 +107,24 @@ export async function deductBalanceAtomic(
   if (rows.length === 0) return null;
   return { newBalance: Number((rows[0] as any).balance) };
 }
+
+/**
+ * Atomically apply a signed delta to the user's balance.
+ * For positive delta (win/refund): balance += delta.
+ * For negative delta (extra bet like double/split): balance -= |delta|, fails if insufficient.
+ * Returns new balance, or null if balance would go negative.
+ */
+export async function applyBalanceDelta(
+  userId: string,
+  delta: number,
+): Promise<{ newBalance: number } | null> {
+  const rows = await db.execute(
+    sql`UPDATE user_balance
+        SET balance = balance + ${delta}
+        WHERE user_id = ${userId}
+          AND balance + ${delta} >= 0
+        RETURNING balance`,
+  );
+  if (rows.length === 0) return null;
+  return { newBalance: Number((rows[0] as any).balance) };
+}

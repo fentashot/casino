@@ -61,7 +61,7 @@ export async function getState(
   const finished = await getGameForUser(userId);
   if (finished && finished.phase === "finished") {
     await persistRound(userId, finished);
-    await syncBalance(userId, finished.balance);
+    // Balance was already applied during settlement — just clear the game
     await clearGame(userId);
     return ok({ game: sanitizeGame(finished) });
   }
@@ -179,7 +179,8 @@ export async function handleInsurance(
     return err(ErrorCode.INSUFFICIENT_FUNDS, (e as Error).message);
   }
 
-  await syncBalance(userId, updated.balance);
+  const insuranceDelta = updated.balance - game.balance;
+  await applyDelta(userId, insuranceDelta);
 
   if (updated.phase === "finished") {
     await persistRound(userId, updated);
@@ -238,9 +239,10 @@ export async function handleAction(
     updated = resolveDealerAndSettle(updated);
   }
 
-  // Sync balance when funds changed
+  // Apply delta to DB balance (never overwrite with stale snapshot)
   if (action === "double" || action === "split" || updated.phase === "finished") {
-    await syncBalance(userId, updated.balance);
+    const delta = updated.balance - game.balance;
+    await applyDelta(userId, delta);
   }
 
   if (updated.phase === "finished") {
@@ -263,7 +265,7 @@ export async function clearFinishedGame(
   if (game && game.phase === "finished") {
     // persistRound is idempotent — safe to call even if already persisted.
     await persistRound(userId, game);
-    await syncBalance(userId, game.balance);
+    // Balance delta was already applied during settlement — no sync needed here
   }
 
   await clearGame(userId);
@@ -283,11 +285,24 @@ export async function getShoeInfoForUser(userId: string): Promise<Result<ShoeInf
 }
 
 /* ============================================================================
-   Internal Helpers — Balance (inlined from balance.repository.ts)
+   Internal Helpers — Balance
    ============================================================================ */
 
-async function syncBalance(userId: string, newBalance: number): Promise<void> {
-  await balanceQueries.updateBalance(userId, newBalance);
+/**
+ * Apply a signed balance delta atomically to the DB.
+ * Always uses balance += delta, never overwrites with a stale snapshot.
+ * Returns the new DB balance, or throws if it would go negative.
+ */
+async function applyDelta(userId: string, delta: number): Promise<number> {
+  if (delta === 0) {
+    const row = await balanceQueries.getBalanceAmount(userId);
+    return Number(row?.balance ?? 0);
+  }
+  const result = await balanceQueries.applyBalanceDelta(userId, delta);
+  if (!result) {
+    throw new Error("balance_went_negative");
+  }
+  return result.newBalance;
 }
 
 /* ============================================================================

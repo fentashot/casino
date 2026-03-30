@@ -67,6 +67,7 @@ export {
 
 // Game Store — DB-backed game state persistence
 export {
+  hasActiveBlackjackGame,
   getActiveGame,
   getGameForUser,
   saveGame,
