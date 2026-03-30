@@ -88,7 +88,7 @@ export function useHourlyHeatmap() {
 		queryKey: ["stats-hourly-heatmap"],
 		queryFn: async () => {
 			return apiRequest<HourlyHeatmapResponse>(
-				api.stats.hourly.$get(),
+				api.stats["hourly-heatmap"].$get(),
 				"Failed to fetch hourly heatmap",
 			);
 		},

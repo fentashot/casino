@@ -177,11 +177,11 @@ function StatsPage() {
 					value={
 						loadingOverview
 							? "—"
-							: ov?.currentStreak === 0
+							: (ov?.currentStreak ?? 0) === 0
 								? "Brak"
-								: ov?.currentStreak > 0
+								: (ov?.currentStreak ?? 0) > 0
 									? `🔥 ${ov?.currentStreak}`
-									: `❄️ ${Math.abs(ov?.currentStreak)}`
+									: `❄️ ${Math.abs(ov?.currentStreak ?? 0)}`
 					}
 					icon={<Flame className="h-4 w-4" />}
 					variant={

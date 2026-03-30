@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Wallet } from "lucide-react";
-import { api } from "@/lib/api";
-import { apiRequest } from "@/lib/api";
+import { api, apiRequest } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface BalanceDisplayProps {

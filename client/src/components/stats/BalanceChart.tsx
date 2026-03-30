@@ -123,7 +123,7 @@ export function BalanceChart({ series }: BalanceChartProps) {
 									},
 								)}`;
 							}}
-							formatter={(value: number) => {
+							formatter={(value) => {
 								const v = Number(value);
 								return [
 									<span
@@ -138,7 +138,7 @@ export function BalanceChart({ series }: BalanceChartProps) {
 										{formatCurrency(v)}
 									</span>,
 									"Profit/Loss",
-								];
+								] as const;
 							}}
 						/>
 					}

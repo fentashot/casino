@@ -15,6 +15,7 @@ import {
   spinLimiter,
   blackjackLimiter,
 } from "./middleware";
+import { AppError, ErrorCode } from "./lib/errors";
 
 interface Vars {
   Variables: {
@@ -24,6 +25,18 @@ interface Vars {
 }
 
 const app = new Hono<Vars>();
+
+/* ============================================================================
+   Global Error Handler
+   ============================================================================ */
+
+app.onError((err, c) => {
+  if (err instanceof AppError) {
+    return c.json(err.toJSON(), err.statusCode as any);
+  }
+  console.error("[unhandled]", err);
+  return c.json({ error: ErrorCode.INTERNAL_ERROR }, 500);
+});
 
 /* ============================================================================
    Global Middleware
@@ -81,7 +94,7 @@ app.get(
   "*",
   serveStatic({
     root: "./client/dist",
-    onNotFound(path, c) {
+    onNotFound(_, c) {
       c.text("Not Found", 404);
     },
   }),

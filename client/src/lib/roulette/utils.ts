@@ -1,6 +1,8 @@
-import type { RouletteNumber } from "@server/lib/roulette";
-import { EUROPEAN_WHEEL_SEQUENCE } from "@server/lib/roulette/constants";
-import { getNumberColor } from "@server/lib/roulette/utils";
+import {
+	EUROPEAN_WHEEL_SEQUENCE,
+	getNumberColor,
+} from "@server/games/roulette/engine";
+import type { RouletteNumber } from "@server/games/roulette/types";
 
 export const ROULETTE_COLORS = {
 	red: "#FF013C",

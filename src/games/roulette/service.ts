@@ -6,13 +6,11 @@
    ============================================================================ */
 
 import * as crypto from "crypto";
-import { z } from "zod";
 import { type Result, ok, err, ErrorCode } from "../../lib/errors";
 import { db } from "../../db/postgres";
 import { casinoSpin, casinoBet, userBalance } from "../../db/schema";
 import { eq, desc } from "drizzle-orm";
 import { balanceQueries, seedQueries } from "../../db/queries";
-import { betSchema } from "../../zodTypes";
 import { calculateWinnings, computeHmac, hashToNumber, redNumbers } from "../../lib/casinoHelpers";
 import type { SpinResponse } from "../../types";
 import type {
@@ -119,12 +117,8 @@ export async function rotateSeed(): Promise<Result<RotateSeedResult>> {
 }
 
 export async function revealSeed(
-  seedId: string | undefined,
+  seedId: string,
 ): Promise<Result<RevealSeedResult>> {
-  if (!seedId) {
-    return err(ErrorCode.MISSING_SEED_ID, "Seed ID is required to reveal");
-  }
-
   const seedRecord = await seedQueries.findById(seedId);
   if (!seedRecord) {
     return err(ErrorCode.SEED_NOT_FOUND, `Seed ${seedId} not found`);
@@ -282,8 +276,8 @@ async function checkIdempotency(
   const existingSpin = await findSpinByIdempotencyKey(key);
   if (!existingSpin) return null;
 
-  const currentBalance = await getBalanceAmountOnly(userId);
-  const serverSeed = await findSeedById(existingSpin.serverSeedId);
+  const currentBalance = await balanceQueries.getBalanceAmount(userId);
+  const serverSeed = await seedQueries.findById(existingSpin.serverSeedId);
 
   return {
     result: {

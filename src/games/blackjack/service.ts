@@ -40,9 +40,6 @@ import type { GameStateResult, ShoeInfoResult, HandSnapshot } from "./types";
 type InsuranceDecision = "take" | "skip";
 type PlayerAction = "hit" | "stand" | "double" | "split";
 
-const DEFAULT_BALANCE = "100000.00";
-const DEFAULT_NONCE = 0;
-
 /* ============================================================================
    Game State
    ============================================================================ */
@@ -293,7 +290,7 @@ function validateAction(
   action: PlayerAction,
   game: BlackjackGameState,
   hand: BlackjackGameState["playerHands"][0],
-): Result<GameStateResult> | null {
+): Result<never> | undefined {
   switch (action) {
     case "double":
       if (hand.cards.length !== 2) {
@@ -302,7 +299,7 @@ function validateAction(
       if (game.balance < hand.bet) {
         return err(ErrorCode.INSUFFICIENT_FUNDS);
       }
-      return null;
+      return undefined;
 
     case "split":
       if (!canSplit(hand.cards)) {
@@ -311,10 +308,10 @@ function validateAction(
       if (game.balance < hand.bet) {
         return err(ErrorCode.INSUFFICIENT_FUNDS);
       }
-      return null;
+      return undefined;
 
     default:
-      return null;
+      return undefined;
   }
 }
 

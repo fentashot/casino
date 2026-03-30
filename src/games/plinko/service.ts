@@ -13,9 +13,6 @@ import * as crypto from "crypto";
 import { dropBall, type Difficulty } from "./engine";
 import type { PlinkoPlayResult } from "./types";
 
-const DEFAULT_BALANCE = "100000.00";
-const DEFAULT_NONCE = 0;
-
 /* ============================================================================
    Play Plinko
    ============================================================================ */
@@ -32,7 +29,7 @@ export async function play(
     return err(
       ErrorCode.INSUFFICIENT_FUNDS,
       `Insufficient funds: need ${bet}, have ${currentBalance}`,
-      { required: bet, current: currentBalance }
+      { required: bet, current: currentBalance },
     );
   }
 
@@ -70,7 +67,10 @@ async function findOrCreateBalance(
   return balanceQueries.findOrCreateBalance(userId);
 }
 
-async function updateBalance(userId: string, newBalance: number): Promise<void> {
+async function updateBalance(
+  userId: string,
+  newBalance: number,
+): Promise<void> {
   return balanceQueries.updateBalance(userId, newBalance);
 }
 

@@ -1,10 +1,17 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import { spinRequestSchema } from "../../zodTypes";
 import type { User, Vars } from "../../types";
 import { requireAdminMiddleware } from "../../auth";
 import { mapResultToResponse } from "../../lib/errors";
 import * as RouletteService from "./service";
+
+// ====== Validation Schemas ======
+
+const revealSeedSchema = z.object({
+  seedId: z.string().min(1, "Seed ID is required"),
+});
 
 // ====== Routes — thin handlers, all logic in RouletteService ======
 export const rouletteRouter = new Hono<Vars>()
@@ -25,9 +32,9 @@ export const rouletteRouter = new Hono<Vars>()
     return mapResultToResponse(c, result);
   })
 
-  .post("/reveal", requireAdminMiddleware, async (c) => {
-    const body = await c.req.json();
-    const result = await RouletteService.revealSeed(body?.seedId);
+  .post("/reveal", requireAdminMiddleware, zValidator("json", revealSeedSchema), async (c) => {
+    const { seedId } = c.req.valid("json");
+    const result = await RouletteService.revealSeed(seedId);
     return mapResultToResponse(c, result);
   })
 

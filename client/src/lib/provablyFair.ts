@@ -19,7 +19,7 @@ export async function computeHmacHex(
 	return bytesToHex(new Uint8Array(sig));
 }
 
-export function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
+export function hexToBytes(hex: string): Uint8Array {
 	const arr = new Uint8Array(hex.length / 2);
 	for (let i = 0; i < arr.length; i++)
 		arr[i] = parseInt(hex.substring(i * 2, i * 2 + 2), 16);

@@ -34,12 +34,31 @@ const queryClient = new QueryClient({
 // Create a new router instance
 interface InitialContext {
 	queryClient: typeof queryClient;
-	auth: null;
+	auth: {
+		isAuthenticated: boolean;
+		user: {
+			id: string;
+			name: string;
+			email: string;
+			balance: number;
+			role: "user" | "admin";
+		} | null;
+		refreshSession: () => Promise<void>;
+		logout: () => Promise<void>;
+	};
 }
 
 const router = createRouter({
 	routeTree,
-	context: { queryClient, auth: null } as InitialContext,
+	context: {
+		queryClient,
+		auth: {
+			isAuthenticated: false,
+			user: null,
+			refreshSession: async () => {},
+			logout: async () => {},
+		},
+	} as InitialContext,
 });
 
 const rootElement = document.getElementById("root");

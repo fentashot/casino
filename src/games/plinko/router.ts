@@ -25,11 +25,13 @@ const playSchema = z.object({
    Route Handlers
    ============================================================================ */
 
-export const plinkoRouter = new Hono<Vars>()
-
-  .post("/play", zValidator("json", playSchema), async (c) => {
+export const plinkoRouter = new Hono<Vars>().post(
+  "/play",
+  zValidator("json", playSchema),
+  async (c) => {
     const { id: userId } = c.get("user") as User;
     const { bet, rows, difficulty } = c.req.valid("json");
     const result = await PlinkoService.play(userId, bet, rows, difficulty);
     return mapResultToResponse(c, result);
-  });
+  },
+);

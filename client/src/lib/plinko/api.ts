@@ -1,5 +1,4 @@
-import { api } from "@/lib/api";
-import { apiRequest } from "@/lib/api-error";
+import { api, apiRequest } from "@/lib/api";
 
 export type Difficulty = "low" | "medium" | "high" | "expert";
 

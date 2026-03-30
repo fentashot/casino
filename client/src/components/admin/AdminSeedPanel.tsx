@@ -18,8 +18,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { api } from "@/lib/api";
-import { apiRequest } from "@/lib/api";
+import { api, apiRequest } from "@/lib/api";
 
 interface Seed {
 	id: string;
