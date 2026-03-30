@@ -8,149 +8,158 @@ import { useSpinResult } from "./useSpinResult";
 import { generateClientSeed, generateIdempotencyKey } from "./utils";
 
 export function useRoulette(initialBalance = 0) {
-	const queryClient = useQueryClient();
-	const notifications = useSpinNotifications();
+  const queryClient = useQueryClient();
+  const notifications = useSpinNotifications();
 
-	const { data: balanceData, isLoading: isBalanceLoading } = useQuery({
-		queryKey: ["casino-balance"],
-		queryFn: async () => {
-			const res = await api.casino.balance.$get();
-			if (!res.ok) throw new Error("Failed to fetch balance");
-			return res.json();
-		},
-		initialData: { balance: initialBalance },
-		staleTime: 5000,
-	});
+  const { data: balanceData, isLoading: isBalanceLoading } = useQuery({
+    queryKey: ["casino-balance"],
+    queryFn: async () => {
+      const res = await api.casino.balance.$get();
+      if (!res.ok) throw new Error("Failed to fetch balance");
+      return res.json();
+    },
+    initialData: { balance: initialBalance },
+    staleTime: 5000,
+  });
 
-	const { data: nonceData, isLoading: isNonceLoading } = useQuery({
-		queryKey: ["casino-nonce"],
-		queryFn: async () => {
-			const res = await api.casino.nonce.$get();
-			if (!res.ok) throw new Error("Failed to fetch nonce");
-			return res.json();
-		},
-		staleTime: Infinity,
-	});
+  const { data: nonceData, isLoading: isNonceLoading } = useQuery({
+    queryKey: ["casino-nonce"],
+    queryFn: async () => {
+      const res = await api.casino.nonce.$get();
+      if (!res.ok) throw new Error("Failed to fetch nonce");
+      return res.json();
+    },
+    staleTime: Infinity,
+  });
 
-	const balance = balanceData?.balance ?? 0;
-	const nextNonce = nonceData?.nextNonce ?? null;
-	const isLoading = isBalanceLoading || isNonceLoading;
+  if (!("balance" in balanceData)) {
+    throw new Error("Invalid response from server");
+  }
 
-	const handleResultApplied = useCallback(
-		(spin: SpinResponse) => {
-			if (spin.totalWin > 0) {
-				notifications.showWin(spin);
-			} else {
-				notifications.showLoss(spin);
-			}
-		},
-		[notifications],
-	);
+  if (nonceData && !("nextNonce" in nonceData)) {
+    throw new Error("Invalid response from server");
+  }
 
-	const {
-		result,
-		spinData,
-		showResult,
-		isSpinning,
-		bufferResult,
-		onSpinEnd,
-		prepareForSpin,
-		abortSpin,
-	} = useSpinResult({ onResultApplied: handleResultApplied });
+  const balance = balanceData?.balance ?? 0;
+  const nextNonce = nonceData?.nextNonce ?? null;
+  const isLoading = isBalanceLoading || isNonceLoading;
 
-	const handleSpinError = useCallback(
-		(error: string, status: number, expectedNonce?: number) => {
-			abortSpin();
+  const handleResultApplied = useCallback(
+    (spin: SpinResponse) => {
+      if (spin.totalWin > 0) {
+        notifications.showWin(spin);
+      } else {
+        notifications.showLoss(spin);
+      }
+    },
+    [notifications],
+  );
 
-			if (status === 400 && error === "invalid_nonce" && expectedNonce) {
-				queryClient.setQueryData(["casino-nonce"], {
-					nextNonce: expectedNonce,
-				});
-				notifications.showSync();
-				return { success: false, error: "nonce_resync" };
-			}
+  const {
+    result,
+    spinData,
+    showResult,
+    isSpinning,
+    bufferResult,
+    onSpinEnd,
+    prepareForSpin,
+    abortSpin,
+  } = useSpinResult({ onResultApplied: handleResultApplied });
 
-			if (status === 402) {
-				notifications.showInsufficientFunds();
-				return { success: false, error: "insufficient_funds" };
-			}
+  const handleSpinError = useCallback(
+    (error: string, status: number, expectedNonce?: number) => {
+      abortSpin();
 
-			notifications.showError(error);
-			return { success: false, error };
-		},
-		[abortSpin, queryClient, notifications],
-	);
+      if (status === 400 && error === "invalid_nonce" && expectedNonce) {
+        queryClient.setQueryData(["casino-nonce"], {
+          nextNonce: expectedNonce,
+        });
+        notifications.showSync();
+        return { success: false, error: "nonce_resync" };
+      }
 
-	const placeBets = useCallback(
-		async (bets: RouletteSelection[]) => {
-			if (nextNonce === null) {
-				notifications.showLoading();
-				return { success: false, error: "nonce_not_loaded" };
-			}
+      if (status === 402) {
+        notifications.showInsufficientFunds();
+        return { success: false, error: "insufficient_funds" };
+      }
 
-			prepareForSpin();
+      notifications.showError(error);
+      return { success: false, error };
+    },
+    [abortSpin, queryClient, notifications],
+  );
 
-			try {
-				const clientSeed = generateClientSeed();
-				const idempotencyKey = generateIdempotencyKey();
+  const placeBets = useCallback(
+    async (bets: RouletteSelection[]) => {
+      if (nextNonce === null) {
+        notifications.showLoading();
+        return { success: false, error: "nonce_not_loaded" };
+      }
 
-				const res = await api.casino.spin.$post({
-					json: {
-						clientSeed,
-						nonce: nextNonce,
-						idempotencyKey,
-						bets: bets.map((b) => ({
-							type: b.type,
-							amount: b.amount,
-							color: b.color || undefined,
-							choice: b.choice,
-							numbers: b.numbers || [],
-						})),
-					},
-				});
+      prepareForSpin();
 
-				const status = res.status;
-				const data = await res.json();
+      try {
+        const clientSeed = generateClientSeed();
+        const idempotencyKey = generateIdempotencyKey();
 
-				if (status < 200 || status >= 300) {
-					return handleSpinError(
-						"error" in data ? data.error : "Request failed",
-						status,
-						"expectedNonce" in data ? data.expectedNonce : undefined,
-					);
-				}
+        const res = await api.casino.spin.$post({
+          json: {
+            clientSeed,
+            nonce: nextNonce,
+            idempotencyKey,
+            bets: bets.map((b) => ({
+              type: b.type,
+              amount: b.amount,
+              color: b.color || undefined,
+              choice: b.choice,
+              numbers: b.numbers || [],
+            })),
+          },
+        });
 
-				if ("result" in data) {
-					bufferResult(data as SpinResponse);
-					return { success: true, error: null };
-				}
+        const status = res.status;
+        const data = await res.json();
 
-				return { success: false, error: "Invalid response" };
-			} catch {
-				abortSpin();
-				notifications.showError("Wystąpił nieoczekiwany błąd");
-				return { success: false, error: "unexpected" };
-			}
-		},
-		[
-			nextNonce,
-			prepareForSpin,
-			bufferResult,
-			abortSpin,
-			handleSpinError,
-			notifications,
-		],
-	);
+        if (status < 200 || status >= 300) {
+          const expectedNonce = "expectedNonce" in data && typeof data.expectedNonce === "number" ? data.expectedNonce : undefined;
+          return handleSpinError(
+            "error" in data ? data.error : "Request failed",
+            status,
+            expectedNonce,
+          );
+        }
 
-	return {
-		balance,
-		nextNonce,
-		isLoading,
-		result,
-		spinData,
-		showResult,
-		isSpinning,
-		placeBets,
-		onSpinEnd,
-	};
+        if ("result" in data) {
+          bufferResult(data as SpinResponse);
+          return { success: true, error: null };
+        }
+
+        return { success: false, error: "Invalid response" };
+      } catch {
+        abortSpin();
+        notifications.showError("Wystąpił nieoczekiwany błąd");
+        return { success: false, error: "unexpected" };
+      }
+    },
+    [
+      nextNonce,
+      prepareForSpin,
+      bufferResult,
+      abortSpin,
+      handleSpinError,
+      notifications,
+    ],
+  );
+
+  return {
+    balance,
+    nextNonce,
+    isLoading,
+    result,
+    spinData,
+    showResult,
+    isSpinning,
+    placeBets,
+    onSpinEnd,
+  };
 }
