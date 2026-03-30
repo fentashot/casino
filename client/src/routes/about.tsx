@@ -26,7 +26,7 @@ function About() {
 						</div>
 						<div className="flex flex-col">
 							<span className="text-base font-bold tracking-tight text-foreground">
-								NEXUS
+								SWAG
 							</span>
 							<span className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
 								Casino
@@ -35,7 +35,7 @@ function About() {
 					</div>
 
 					<h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-						About <span className="text-primary">NEXUS Casino</span>
+						About <span className="text-primary">SWAG Casino</span>
 					</h1>
 
 					<p className="text-base text-muted-foreground leading-relaxed max-w-lg">
@@ -108,7 +108,7 @@ function About() {
 					style={{ animationDelay: "300ms" }}
 				>
 					<p className="text-xs text-muted-foreground/60 leading-relaxed">
-						NEXUS Casino is a demonstration project. All balances are virtual.
+						SWAG Casino is a demonstration project. All balances are virtual.
 						This platform is not a licensed gambling operator and does not
 						involve real money transactions.
 					</p>
