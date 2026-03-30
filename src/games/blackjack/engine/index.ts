@@ -65,12 +65,14 @@ export {
   getShoeCount,
 } from "./shoeManager";
 
-// Game Store — DB-backed game state persistence
+// Game Store — Redis-backed active game state (Postgres only for settlement)
 export {
   hasActiveBlackjackGame,
   getActiveGame,
+  getActiveGameWithRaw,
   getGameForUser,
   saveGame,
+  compareAndSaveGame,
   clearGame,
   markPersisted,
-} from "./gameStore";
+} from "./redisStore";

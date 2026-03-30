@@ -1,23 +1,22 @@
 /* ============================================================================
-   useBlackjack – Orchestrator
+   useBlackjack – Orchestrator (WebSocket-based)
    Composes single-responsibility sub-hooks:
      • useBlackjackAnimation     — card reveal queue, display state
      • useBlackjackNotifications — toasts, confetti, error messages
-   This hook is responsible only for wiring API calls to animation/notification
-   sub-hooks and exposing a flat public API to the page component.
+   Communicates via persistent WebSocket instead of HTTP mutations.
+   Public API is identical to the previous HTTP-based version.
    ============================================================================ */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
-import { api, apiRequest, readApiData } from "@/lib/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { api, apiRequest } from "@/lib/api";
+import { getBlackjackSocket, destroyBlackjackSocket, type ServerMessage } from "@/lib/blackjackWs";
 import { playWinSound } from "@/lib/audio";
 import { canSplitHand } from "./cardHelpers";
 import {
 	type BlackjackAction,
-	type BlackjackApiResult,
 	type BlackjackGameState,
 	type InsuranceDecision,
-	isApiError,
 	type ShoeInfo,
 } from "./types";
 import { useBlackjackAnimation } from "./useBlackjackAnimation";
@@ -67,6 +66,7 @@ export function useBlackjack(initialBalance = 0) {
 	/* ── Server game state ─────────────────────────────────────────────────── */
 
 	const [serverGame, setServerGame] = useState<BlackjackGameState | null>(null);
+	const [isLoading, setIsLoading] = useState(false);
 
 	/* ── Balance query ─────────────────────────────────────────────────────── */
 
@@ -84,7 +84,7 @@ export function useBlackjack(initialBalance = 0) {
 		staleTime: 5000,
 	});
 
-	const balance = serverGame?.balance ?? balanceData?.balance ?? 0;
+	const balance = balanceData?.balance ?? 0;
 
 	const syncBalance = useCallback(
 		(newBalance: number) => {
@@ -98,7 +98,6 @@ export function useBlackjack(initialBalance = 0) {
 	const handleGameResponse = useCallback(
 		(game: BlackjackGameState, prevShown: number, clearTable = false) => {
 			setServerGame(game);
-			syncBalance(game.balance);
 
 			if (clearTable) {
 				prepareForDeal(game);
@@ -115,107 +114,102 @@ export function useBlackjack(initialBalance = 0) {
 				}
 			});
 		},
-		[syncBalance, prepareForDeal, runAnimation, notify, queryClient],
+		[prepareForDeal, runAnimation, notify, queryClient],
 	);
 
-	/* ── Mutations ─────────────────────────────────────────────────────────── */
+	/* ── WebSocket message handler ─────────────────────────────────────────── */
 
-	const dealMutation = useMutation({
-		mutationFn: async (bet: number) => {
-			const res = await api.blackjack.deal.$post({ json: { bet } });
-			return (await res.json()) as BlackjackApiResult;
-		},
-		onMutate: () => {
-			resetAnimation();
-			setServerGame(null);
-		},
-		onSuccess: (data) => {
-			if (isApiError(data)) {
-				notify.showError(data.error, DEAL_ERRORS);
+	// Keep a ref to shownCountRef so the WS handler closure doesn't go stale
+	const shownCountSnapshot = useRef(0);
+
+	const handleWsMessage = useCallback(
+		(msg: ServerMessage) => {
+			setIsLoading(false);
+
+			if (msg.type === "pong") return;
+
+			if (msg.type === "error") {
+				const code = msg.payload.code;
+				// Route errors to appropriate notification handlers based on context
+				notify.showError(code, { ...DEAL_ERRORS, ...ACTION_ERRORS, ...INSURANCE_ERRORS });
 				return;
 			}
-			if (!data.game) {
-				notify.showUnexpectedError();
+
+			if (msg.type === "shoe_info") {
+				queryClient.setQueryData(["blackjack-shoe"], msg.payload);
 				return;
 			}
-			handleGameResponse(data.game, 0, true);
+
+			if (msg.type === "state") {
+				syncBalance(msg.payload.balance);
+
+				if (msg.payload.game === null) {
+					setServerGame(null);
+					resetAnimation();
+					queryClient.invalidateQueries({ queryKey: ["casino-balance"] });
+					return;
+				}
+
+				const game = msg.payload.game as BlackjackGameState;
+				const prevShown = shownCountSnapshot.current;
+				const isNewDeal = !serverGame || serverGame.id !== game.id;
+				handleGameResponse(game, isNewDeal ? 0 : prevShown, isNewDeal);
+			}
 		},
-		onError: () => notify.showUnexpectedError(),
+		[notify, syncBalance, resetAnimation, handleGameResponse, queryClient, serverGame],
+	);
+
+	/* ── WebSocket lifecycle ───────────────────────────────────────────────── */
+
+	useEffect(() => {
+		const socket = getBlackjackSocket();
+		const unsub = socket.onMessage(handleWsMessage);
+		return unsub;
+	}, [handleWsMessage]);
+
+	// Keep shownCountSnapshot in sync
+	useEffect(() => {
+		shownCountSnapshot.current = shownCountRef.current;
 	});
 
-	const insuranceMutation = useMutation({
-		mutationFn: async (decision: InsuranceDecision) => {
-			const res = await api.blackjack.insurance.$post({ json: { decision } });
-			return (await res.json()) as BlackjackApiResult;
-		},
-		onSuccess: (data, decision) => {
-			if (isApiError(data)) {
-				notify.showError(data.error, INSURANCE_ERRORS);
-				return;
-			}
-			if (!data.game) {
-				notify.showUnexpectedError();
-				return;
-			}
-			const prevShown = shownCountRef.current;
-			handleGameResponse(data.game, prevShown);
-			const hand = data.game.playerHands[0];
-			if (hand.insuranceResult) {
-				notify.showInsuranceResult(hand.insuranceResult, decision);
-			}
-		},
-		onError: () => notify.showUnexpectedError(),
-	});
-
-	const actionMutation = useMutation({
-		mutationFn: async (action: BlackjackAction) => {
-			const res = await api.blackjack.action.$post({ json: { action } });
-			return (await res.json()) as BlackjackApiResult;
-		},
-		onSuccess: (data) => {
-			if (isApiError(data)) {
-				notify.showError(data.error, ACTION_ERRORS);
-				return;
-			}
-			if (!data.game) {
-				notify.showUnexpectedError();
-				return;
-			}
-			const prevShown = shownCountRef.current;
-			handleGameResponse(data.game, prevShown);
-		},
-		onError: () => notify.showUnexpectedError(),
-	});
-
-	const isLoading =
-		dealMutation.isPending ||
-		insuranceMutation.isPending ||
-		actionMutation.isPending;
+	// Destroy socket when hook unmounts (page leave)
+	useEffect(() => {
+		return () => {
+			destroyBlackjackSocket();
+		};
+	}, []);
 
 	/* ── Actions ───────────────────────────────────────────────────────────── */
+
+	const send = useCallback((msg: Parameters<ReturnType<typeof getBlackjackSocket>["send"]>[0]) => {
+		setIsLoading(true);
+		getBlackjackSocket().send(msg);
+	}, []);
 
 	const deal = useCallback(
 		(bet: number) => {
 			if (isLoading) return;
-			dealMutation.mutate(bet);
+			resetAnimation();
+			setServerGame(null);
+			send({ type: "deal", payload: { bet } });
 		},
-		[isLoading, dealMutation],
+		[isLoading, resetAnimation, send],
 	);
 
 	const takeInsurance = useCallback(
 		(decision: InsuranceDecision) => {
 			if (isLoading || isAnimating) return;
-			insuranceMutation.mutate(decision);
+			send({ type: "insurance", payload: { decision } });
 		},
-		[isLoading, isAnimating, insuranceMutation],
+		[isLoading, isAnimating, send],
 	);
 
 	const performAction = useCallback(
 		(action: BlackjackAction) => {
 			if (isLoading || isAnimating || !serverGame) return;
-			actionMutation.mutate(action);
+			send({ type: "action", payload: { action } });
 		},
-		[isLoading, isAnimating, serverGame, actionMutation],
+		[isLoading, isAnimating, serverGame, send],
 	);
 
 	const hit = useCallback(() => performAction("hit"), [performAction]);
@@ -223,20 +217,16 @@ export function useBlackjack(initialBalance = 0) {
 	const double = useCallback(() => performAction("double"), [performAction]);
 	const split = useCallback(() => performAction("split"), [performAction]);
 
-	const newGame = useCallback(async () => {
+	const newGame = useCallback(() => {
 		resetAnimation();
-		await api.blackjack.clear.$post();
-		setServerGame(null);
-		queryClient.invalidateQueries({ queryKey: ["casino-balance"] });
-	}, [resetAnimation, queryClient]);
+		send({ type: "clear" });
+	}, [resetAnimation, send]);
 
 	const restoreGame = useCallback(async () => {
+		// Fetch state via HTTP fallback on mount / page restore
 		try {
 			const res = await api.blackjack.state.$get();
-			const data = await readApiData<{ game: BlackjackGameState | null }>(
-				res,
-				"Failed to restore game",
-			);
+			const data = await res.json() as { game: BlackjackGameState | null };
 			if (data.game) {
 				setServerGame(data.game);
 				restoreDisplayState(data.game);
@@ -263,6 +253,7 @@ export function useBlackjack(initialBalance = 0) {
 	});
 
 	/* ── Derived state ─────────────────────────────────────────────────────── */
+
 	const resolvedShoeInfo: ShoeInfo = shoeInfo ?? {
 		cardsRemaining: null,
 		penetration: null,

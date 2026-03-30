@@ -13,6 +13,10 @@ export default defineConfig({
 	},
 	server: {
 		proxy: {
+			"/api/blackjack/ws": {
+				target: "ws://localhost:2137",
+				ws: true,
+			},
 			"/api": "http://localhost:2137",
 		},
 	},

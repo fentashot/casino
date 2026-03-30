@@ -25,11 +25,13 @@
     "expense-tracker": ".",
     "hono": "^4.10.1",
     "hono-rate-limiter": "^0.5.3",
+    "ioredis": "^5.10.1",
     "postgres": "^3.4.8",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/ioredis": "^5.0.0",
     "@types/pg": "^8.16.0",
     "baseline-browser-mapping": "latest",
     "concurrently": "^8.2.2",

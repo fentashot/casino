@@ -5,6 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
+# Infrastructure (Postgres + Redis)
+docker compose up -d
+
 # Development (runs both server and client concurrently)
 bun run dev
 
@@ -18,8 +21,9 @@ bun run dev:client
 bun run db:gen     # generate migration from schema changes
 bun run db:push    # push schema directly to DB (dev only)
 
-# Type-check client
-cd client && bunx tsc --noEmit
+# Type-check
+bunx tsc --noEmit            # server
+cd client && bunx tsc --noEmit  # client
 
 # Lint + format (client) — biome excludes src/index.css and src/components/ui/**
 cd client && bun run check
@@ -33,13 +37,13 @@ No test suite exists in this repo.
 
 ## Architecture
 
-**Monorepo** – Bun/Hono backend (`src/`) + React/Vite client (`client/`). The server serves the built client as static files in production. In dev, Vite proxies API calls to the Hono server.
+**Monorepo** – Bun/Hono backend (`src/`) + React/Vite client (`client/`). The server serves the built client as static files in production. In dev, Vite proxies API calls to the Hono server. Requires **PostgreSQL** (game history, balances) and **Redis** (active blackjack game state, TTL 24h).
 
 ### Backend (`src/`)
 
 Structured as: `router → service → engine (pure logic)`
 
-- **`src/index.ts`** – Hono app entry. Registers per-route rate limiters, auth middleware, CORS, mounts all routers under `/api/*`, serves static files in production.
+- **`src/index.ts`** – Hono app entry. Registers per-route rate limiters, auth middleware, CORS, mounts all routers under `/api/*`, serves static files in production. Also hosts the Bun WebSocket server for blackjack on `/api/blackjack/ws` — WS messages are serialized per-user via a `wsQueues` Promise chain to prevent race conditions.
 - **`src/games/`** – One directory per game (roulette, blackjack, plinko) plus stats and expenses. Each contains `router.ts`, `service.ts`, and an `engine/` subdirectory with pure functions.
 - **`src/db/`** – Drizzle ORM with PostgreSQL (`postgres.ts`). Schema in `schema.ts`. No repository layer — DB queries are inlined in service files. Balance updates use `SELECT ... FOR UPDATE` row locking.
 - **`src/lib/errors.ts`** – `Result<T>` pattern used throughout: `ok(data)` / `err(ErrorCode)`. Routers call `mapResultToResponse(c, result)` to convert to HTTP responses. **Never throw inside services — return `err(...)`.**
@@ -57,12 +61,12 @@ Two parallel hook directories exist — `src/games/` (used by components) and `s
 - **Routing** – TanStack Router with file-based routes in `src/routes/`. `routeTree.gen.ts` is auto-generated; never edit manually. `/_authenticated.tsx` is the protected layout — it redirects unauthenticated users to `/login` via `beforeLoad`.
 - **Server state** – React Query (`@tanstack/react-query`). Shared `["casino-balance"]` query key is the single source of truth for balance across all games. After any game action that changes balance, call `queryClient.setQueryData(["casino-balance"], { balance: newValue })`.
 - **Game hooks pattern**: Each game has an orchestrator hook (`useRoulette`, `usePlinkoGame`, `useBlackjack`) that composes sub-hooks for animation and notifications. Animation↔server synchronisation uses ref-based bridging (`pendingResultRef`) — results are buffered until the animation completes, then applied to React Query cache. A 10s safety timeout force-applies the result if the animation callback never fires.
-- **Blackjack** uses `useMutation` for all actions (deal, insurance, hit/stand/double/split). `isLoading` is derived from `.isPending` of all mutations OR'd together.
+- **Blackjack** communicates exclusively over WebSocket (`/api/blackjack/ws`). Client uses `BlackjackWsClient` from `client/src/lib/blackjackWs.ts` with exponential-backoff reconnection. `useBlackjack` hook wraps it; `isLoading` is tracked via a local ref set on send, cleared on `state` message.
 - **`src/lib/blackjack/`** – Client-side blackjack types and API wrappers re-exported for components.
 
 ### Database Schema
 
-Key tables: `user_balance` (balance + nonce per user), `casino_spin` + `casino_bet` (roulette history), `blackjack_round` (finished games), `blackjack_active_game` (in-progress game state as JSONB), `plinko_round`, `casino_server_seed`.
+Key tables: `user_balance` (balance + nonce per user), `casino_spin` + `casino_bet` (roulette history), `blackjack_round` (settled games only — active state lives in Redis), `plinko_round`, `casino_server_seed`.
 
 ### Provably Fair
 
@@ -72,6 +76,8 @@ Spin result = HMAC-SHA256(serverSeed, `${clientSeed}:${nonce}`). Server seed has
 
 Pure state-transition functions in `src/games/blackjack/engine/`. Each action (`dealGame`, `hitHand`, `doubleDown`, `splitHand`, `resolveDealerAndSettle`) takes the current `BlackjackGameState` and returns a new one — no mutation. An 8-deck shoe is managed per-user in memory (`shoeManager`) and persisted to DB; it reshuffles at 75% penetration.
 
+Active game state is stored in Redis (`redisStore.ts`). Writes use a Lua-based compare-and-swap (`compareAndSaveGame`) to detect concurrent modifications — callers receive `INTERNAL_ERROR` on conflict and should surface a retry message to the client.
+
 ### Plinko Engine
 
 `dropBall(bet, rows, difficulty, seed)` returns a `path` (array of left/right decisions per row), `finalBucket`, `multiplier`, and `win`. Difficulty controls the multiplier table variance — "expert" on 16 rows has a 10000x peak vs "low" at 5.6x. Buckets are symmetric; edges pay more.
@@ -80,6 +86,7 @@ Pure state-transition functions in `src/games/blackjack/engine/`. Each action (`
 
 See `.env.example`:
 - `DATABASE_URL` – PostgreSQL connection string
+- `REDIS_URL` – Redis connection string (default: `redis://localhost:6379`)
 - `BETTER_AUTH_SECRET` – min 32 chars random string
 - `BETTER_AUTH_URL` – public URL (used for OAuth redirects)
 - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` – OAuth

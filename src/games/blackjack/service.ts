@@ -8,7 +8,7 @@
 
 import { type Result, ok, err, ErrorCode } from "../../lib/errors";
 import { db } from "../../db/postgres";
-import { blackjackRound, blackjackActiveGame, userBalance } from "../../db/schema";
+import { blackjackRound, userBalance } from "../../db/schema";
 import { balanceQueries } from "../../db/queries";
 import * as crypto from "crypto";
 import { eq, sql } from "drizzle-orm";
@@ -26,8 +26,10 @@ import {
   shouldTriggerDealer,
   sanitizeGame,
   getActiveGame,
+  getActiveGameWithRaw,
   getGameForUser,
   saveGame,
+  compareAndSaveGame,
   clearGame,
   getShoeInfo,
   canSplit,
@@ -79,6 +81,12 @@ export async function deal(
 ): Promise<Result<GameStateResult>> {
   await hydrateShoe(userId);
 
+  // Check Redis for existing active game before touching DB
+  const existingGame = await getActiveGame(userId);
+  if (existingGame) {
+    return err(ErrorCode.ACTIVE_GAME_EXISTS, "Finish or clear your current game first");
+  }
+
   const txResult = await db.transaction(async (tx) => {
     await tx
       .insert(userBalance)
@@ -94,19 +102,6 @@ export async function deal(
       return { errorCode: ErrorCode.INTERNAL_ERROR } as const;
     }
 
-    const existingGame = await tx.query.blackjackActiveGame.findFirst({
-      where: eq(blackjackActiveGame.userId, userId),
-      columns: { state: true },
-    });
-    if (
-      existingGame &&
-      typeof existingGame.state === "object" &&
-      existingGame.state !== null &&
-      (existingGame.state as { phase?: string }).phase !== "finished"
-    ) {
-      return { errorCode: ErrorCode.ACTIVE_GAME_EXISTS } as const;
-    }
-
     const currentBalance = Number((lockedBalance[0] as any).balance);
     if (currentBalance < bet) {
       return { errorCode: ErrorCode.INSUFFICIENT_FUNDS } as const;
@@ -119,30 +114,9 @@ export async function deal(
       .set({ balance: nextGame.balance.toString() })
       .where(eq(userBalance.userId, userId));
 
-    await tx
-      .insert(blackjackActiveGame)
-      .values({
-        userId,
-        gameId: nextGame.id,
-        state: nextGame,
-        persisted: false,
-      })
-      .onConflictDoUpdate({
-        target: blackjackActiveGame.userId,
-        set: {
-          gameId: nextGame.id,
-          state: nextGame,
-          persisted: false,
-          updatedAt: new Date(),
-        },
-      });
-
     return { game: nextGame };
   });
 
-  if ("errorCode" in txResult && txResult.errorCode === ErrorCode.ACTIVE_GAME_EXISTS) {
-    return err(ErrorCode.ACTIVE_GAME_EXISTS, "Finish or clear your current game first");
-  }
   if ("errorCode" in txResult && txResult.errorCode === ErrorCode.INSUFFICIENT_FUNDS) {
     return err(ErrorCode.INSUFFICIENT_FUNDS, "Insufficient funds");
   }
@@ -150,6 +124,7 @@ export async function deal(
     return err(ErrorCode.INTERNAL_ERROR, "Failed to start game");
   }
 
+  await saveGame(txResult.game);
   await persistShoe(userId);
   return ok({ game: sanitizeGame(txResult.game) });
 }
@@ -162,10 +137,11 @@ export async function handleInsurance(
   userId: string,
   decision: InsuranceDecision,
 ): Promise<Result<GameStateResult>> {
-  const game = await getActiveGame(userId);
-  if (!game) {
+  const entry = await getActiveGameWithRaw(userId);
+  if (!entry) {
     return err(ErrorCode.NO_ACTIVE_GAME);
   }
+  const { game, raw: expectedRaw } = entry;
 
   if (game.phase !== "insurance") {
     return err(ErrorCode.INSURANCE_NOT_AVAILABLE);
@@ -180,13 +156,20 @@ export async function handleInsurance(
   }
 
   const insuranceDelta = updated.balance - game.balance;
-  await applyDelta(userId, insuranceDelta);
+  try {
+    await applyDelta(userId, insuranceDelta);
+  } catch (e) {
+    return err(ErrorCode.INSUFFICIENT_FUNDS, (e as Error).message);
+  }
 
   if (updated.phase === "finished") {
     await persistRound(userId, updated);
   }
 
-  await saveGame(updated);
+  const saved = await compareAndSaveGame(updated, expectedRaw);
+  if (!saved) {
+    return err(ErrorCode.INTERNAL_ERROR, "Concurrent modification detected, please retry");
+  }
   await persistShoe(userId);
   return ok({ game: sanitizeGame(updated) });
 }
@@ -199,10 +182,11 @@ export async function handleAction(
   userId: string,
   action: PlayerAction,
 ): Promise<Result<GameStateResult>> {
-  const game = await getActiveGame(userId);
-  if (!game) {
+  const entry = await getActiveGameWithRaw(userId);
+  if (!entry) {
     return err(ErrorCode.NO_ACTIVE_GAME);
   }
+  const { game, raw: expectedRaw } = entry;
 
   if (game.phase === "insurance") {
     return err(ErrorCode.INSURANCE_PENDING);
@@ -242,14 +226,21 @@ export async function handleAction(
   // Apply delta to DB balance (never overwrite with stale snapshot)
   if (action === "double" || action === "split" || updated.phase === "finished") {
     const delta = updated.balance - game.balance;
-    await applyDelta(userId, delta);
+    try {
+      await applyDelta(userId, delta);
+    } catch (e) {
+      return err(ErrorCode.INSUFFICIENT_FUNDS, (e as Error).message);
+    }
   }
 
   if (updated.phase === "finished") {
     await persistRound(userId, updated);
   }
 
-  await saveGame(updated);
+  const saved = await compareAndSaveGame(updated, expectedRaw);
+  if (!saved) {
+    return err(ErrorCode.INTERNAL_ERROR, "Concurrent modification detected, please retry");
+  }
   await persistShoe(userId);
   return ok({ game: sanitizeGame(updated) });
 }
