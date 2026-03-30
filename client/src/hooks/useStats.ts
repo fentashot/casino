@@ -5,14 +5,6 @@
    ============================================================================ */
 
 import { useQuery } from "@tanstack/react-query";
-import {
-	fetchBalanceHistory,
-	fetchDaily,
-	fetchGameBreakdown,
-	fetchHourlyHeatmap,
-	fetchOverview,
-	fetchRecent,
-} from "@/lib/stats/api";
 import type {
 	BalanceHistoryResponse,
 	DailyResponse,
@@ -20,7 +12,8 @@ import type {
 	HourlyHeatmapResponse,
 	RecentResponse,
 	StatsOverview,
-} from "@/lib/stats/types";
+} from "@/games/stats/types";
+import { api } from "@/lib/api";
 
 /* ── Shared query options ────────────────────────────────────────────────── */
 
@@ -35,7 +28,11 @@ const STALE_MS = 2 * 60 * 1000;
 export function useStatsOverview() {
 	return useQuery<StatsOverview>({
 		queryKey: ["stats-overview"],
-		queryFn: fetchOverview,
+		queryFn: async () => {
+			const res = await api.stats.overview.$get();
+			if (!res.ok) throw new Error("Failed to fetch stats overview");
+			return res.json();
+		},
 		staleTime: STALE_MS,
 		// Always refetch when the stats page mounts so the dashboard shows fresh data
 		refetchOnMount: "always",
@@ -49,7 +46,13 @@ export function useStatsOverview() {
 export function useBalanceHistory(limit = 200) {
 	return useQuery<BalanceHistoryResponse>({
 		queryKey: ["stats-balance-history", limit],
-		queryFn: () => fetchBalanceHistory(limit),
+		queryFn: async () => {
+			const res = await api.stats["balance-history"].$get({
+				query: { limit: limit.toString() },
+			});
+			if (!res.ok) throw new Error("Failed to fetch balance history");
+			return res.json();
+		},
 		staleTime: STALE_MS,
 		// Ensure the chart refreshes whenever the user navigates to the stats page
 		refetchOnMount: "always",
@@ -63,7 +66,13 @@ export function useBalanceHistory(limit = 200) {
 export function useDailyStats(days = 30) {
 	return useQuery<DailyResponse>({
 		queryKey: ["stats-daily", days],
-		queryFn: () => fetchDaily(days),
+		queryFn: async () => {
+			const res = await api.stats.daily.$get({
+				query: { days: days.toString() },
+			});
+			if (!res.ok) throw new Error("Failed to fetch daily stats");
+			return res.json();
+		},
 		staleTime: STALE_MS,
 		// Always refetch on mount so period changes / re-entry show latest data
 		refetchOnMount: "always",
@@ -74,7 +83,11 @@ export function useDailyStats(days = 30) {
 export function useHourlyHeatmap() {
 	return useQuery<HourlyHeatmapResponse>({
 		queryKey: ["stats-hourly-heatmap"],
-		queryFn: fetchHourlyHeatmap,
+		queryFn: async () => {
+			const res = await api.stats.hourly.$get();
+			if (!res.ok) throw new Error("Failed to fetch hourly heatmap");
+			return res.json();
+		},
 		staleTime: STALE_MS,
 		refetchOnMount: "always",
 	});
@@ -84,7 +97,11 @@ export function useHourlyHeatmap() {
 export function useGameBreakdown() {
 	return useQuery<GameBreakdownResponse>({
 		queryKey: ["stats-game-breakdown"],
-		queryFn: fetchGameBreakdown,
+		queryFn: async () => {
+			const res = await api.stats["game-breakdown"].$get();
+			if (!res.ok) throw new Error("Failed to fetch game breakdown");
+			return res.json();
+		},
 		staleTime: STALE_MS,
 		refetchOnMount: "always",
 	});
@@ -97,7 +114,13 @@ export function useGameBreakdown() {
 export function useRecentRounds(limit = 20) {
 	return useQuery<RecentResponse>({
 		queryKey: ["stats-recent", limit],
-		queryFn: () => fetchRecent(limit),
+		queryFn: async () => {
+			const res = await api.stats.recent.$get({
+				query: { limit: limit.toString() },
+			});
+			if (!res.ok) throw new Error("Failed to fetch recent rounds");
+			return res.json();
+		},
 		staleTime: STALE_MS,
 		// Recent rounds should be up-to-date whenever user opens the stats page
 		refetchOnMount: "always",

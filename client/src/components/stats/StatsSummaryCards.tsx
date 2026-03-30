@@ -16,8 +16,8 @@ import {
 	TrendingUp,
 	Trophy,
 } from "lucide-react";
+import type { StatsOverview } from "@/games/stats/types";
 import { formatCurrency, formatProfit } from "@/lib/format";
-import type { StatsOverview } from "@/lib/stats/types";
 import { cn } from "@/lib/utils";
 
 interface StatsSummaryCardsProps {

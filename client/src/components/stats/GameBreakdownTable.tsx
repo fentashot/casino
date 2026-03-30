@@ -5,8 +5,8 @@
    ============================================================================ */
 
 import { Dices, Layers } from "lucide-react";
+import type { GameBreakdownEntry } from "@/games/stats/types";
 import { formatCurrency } from "@/lib/format";
-import type { GameBreakdownEntry } from "@/lib/stats/types";
 import { cn } from "@/lib/utils";
 
 interface GameBreakdownTableProps {

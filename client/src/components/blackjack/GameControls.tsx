@@ -1,5 +1,5 @@
 import { RotateCcw } from "lucide-react";
-import type { BlackjackGameState } from "@/lib/blackjack";
+import type { BlackjackGameState } from "@/games/blackjack/types";
 import { cn } from "@/lib/utils";
 import { BlackjackActions } from "./BlackjackActions";
 import { BlackjackBetControls } from "./BlackjackBetControls";

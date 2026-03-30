@@ -6,8 +6,8 @@
    ============================================================================ */
 
 import { Dices } from "lucide-react";
+import type { RecentRound } from "@/games/stats/types";
 import { formatCurrency, formatProfit } from "@/lib/format";
-import type { RecentRound } from "@/lib/stats/types";
 import { cn } from "@/lib/utils";
 
 interface RecentRoundsFeedProps {
@@ -48,7 +48,10 @@ function RoundRow({ round }: { round: RecentRound }) {
 			{round.game === "Blackjack" ? (
 				<BlackjackBadge handResults={round.handResults} />
 			) : round.game === "Plinko" ? (
-				<PlinkoBadge multiplier={round.handResults[0] ?? "1x"} profit={round.profit} />
+				<PlinkoBadge
+					multiplier={round.handResults[0] ?? "1x"}
+					profit={round.profit}
+				/>
 			) : (
 				<RouletteBadge number={round.number} color={round.color} />
 			)}
@@ -69,7 +72,10 @@ function RoundRow({ round }: { round: RecentRound }) {
 			)}
 			{/* Multiplier pill — plinko only */}
 			{round.game === "Plinko" && round.handResults[0] && (
-				<MultiplierPill multiplier={round.handResults[0]} profit={round.profit} />
+				<MultiplierPill
+					multiplier={round.handResults[0]}
+					profit={round.profit}
+				/>
 			)}
 
 			{/* Bet — hidden on mobile */}
@@ -124,7 +130,13 @@ function RouletteBadge({ number, color }: { number: number; color: string }) {
 
 /* ── Plinko game badge ───────────────────────────────────────────────────── */
 
-function PlinkoBadge({ multiplier, profit }: { multiplier: string; profit: number }) {
+function PlinkoBadge({
+	multiplier,
+	profit,
+}: {
+	multiplier: string;
+	profit: number;
+}) {
 	const mul = parseFloat(multiplier);
 	const isWin = profit > 0;
 	return (
@@ -145,7 +157,13 @@ function PlinkoBadge({ multiplier, profit }: { multiplier: string; profit: numbe
 
 /* ── Plinko multiplier pill ──────────────────────────────────────────────── */
 
-function MultiplierPill({ multiplier, profit }: { multiplier: string; profit: number }) {
+function MultiplierPill({
+	multiplier,
+	profit,
+}: {
+	multiplier: string;
+	profit: number;
+}) {
 	const isWin = profit > 0;
 	return (
 		<div className="hidden sm:flex items-center gap-1 shrink-0">

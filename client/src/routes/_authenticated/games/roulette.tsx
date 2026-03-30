@@ -9,12 +9,12 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/auth-context";
-import { ProvablyFairInfo } from "@/components/ProvablyFairInfo";
-import RouletteControls from "@/components/RouletteControls";
-import AnimatedWheel from "@/components/RouletteWheel";
-import { SpinHistory } from "@/components/SpinHistory";
+import { ProvablyFairInfo } from "@/components/roulette/ProvablyFairInfo";
+import RouletteControls from "@/components/roulette/RouletteControls";
+import AnimatedWheel from "@/components/roulette/RouletteWheel";
+import { SpinHistory } from "@/components/roulette/SpinHistory";
 import { Button } from "@/components/ui/button";
-import { useRoulette } from "@/hooks/roulette/useRoulette";
+import { useRoulette } from "@/games/roulette/useRoulette";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/games/roulette")({

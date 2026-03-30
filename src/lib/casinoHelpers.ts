@@ -12,12 +12,14 @@ import {
   isParityBetWinner,
   isColorBetWinner,
   isRangeBetWinner,
-  type Bet,
-  type SpinResult,
-  type ProvablyFairData,
-  type SpinOutcome,
-  type RouletteNumber
-} from "./roulette";
+} from "../games/roulette/engine";
+import type {
+  Bet,
+  SpinResult,
+  ProvablyFairData,
+  SpinOutcome,
+  RouletteNumber,
+} from "../games/roulette/types";
 
 // Re-export dla bezpośredniego użycia
 export {
@@ -99,6 +101,8 @@ function convertLegacyBet(legacyBet: z.infer<typeof betSchema>): Bet {
       return { type, color: color as 'red' | 'black', amount };
     case 'high_low':
       return { type, choice: choice as 'low' | 'high', amount };
+    default:
+      throw new Error(`Unsupported bet type: ${type}`);
   }
 }
 

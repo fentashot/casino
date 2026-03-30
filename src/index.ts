@@ -2,11 +2,11 @@ import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { serveStatic } from "hono/bun";
 import { auth, useAuthMiddleware, type AuthUser } from "./auth";
-import { expensesRoutes } from "./routes/expenses";
-import { casinoRoutes } from "./routes/casino";
-import { blackjackRoutes } from "./routes/blackjack";
-import { plinkoRoutes } from "./routes/plinko";
-import { statsRoutes } from "./routes/stats";
+import { expensesRouter } from "./games/expenses/router";
+import { rouletteRouter } from "./games/roulette/router";
+import { blackjackRouter } from "./games/blackjack/router";
+import { plinkoRouter } from "./games/plinko/router";
+import { statsRouter } from "./games/stats/router";
 import {
   securityHeaders,
   authCors,
@@ -67,11 +67,11 @@ app.get("/api/me", (c) => {
 
 const apiRoutes = app
   .basePath("/api")
-  .route("/expenses", expensesRoutes)
-  .route("/casino", casinoRoutes)
-  .route("/blackjack", blackjackRoutes)
-  .route("/plinko", plinkoRoutes)
-  .route("/stats", statsRoutes);
+  .route("/expenses", expensesRouter)
+  .route("/casino", rouletteRouter)
+  .route("/blackjack", blackjackRouter)
+  .route("/plinko", plinkoRouter)
+  .route("/stats", statsRouter);
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => {
   return auth.handler(c.req.raw);

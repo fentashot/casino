@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
-import RegisterForm from "@/components/RegisterForm";
+import RegisterForm from "@/components/auth/RegisterForm";
 
 export const Route = createFileRoute("/register")({
 	beforeLoad: ({ context }) => {

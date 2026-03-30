@@ -1,9 +1,9 @@
+import type { Difficulty } from "@server/games/plinko/engine";
 import { ChevronDown } from "lucide-react";
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { usePlinkoCanvas } from "@/hooks/plinko/usePlinkoCanvas";
-import { usePlinkoGame } from "@/hooks/plinko/usePlinkoGame";
-import type { Difficulty } from "@/lib/plinko/api";
+import { usePlinkoCanvas } from "@/games/plinko/usePlinkoCanvas";
+import { usePlinkoGame } from "@/games/plinko/usePlinkoGame";
 import { cn } from "@/lib/utils";
 
 const DIFFICULTY_OPTIONS: { value: Difficulty; label: string }[] = [

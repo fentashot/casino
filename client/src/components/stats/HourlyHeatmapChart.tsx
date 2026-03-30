@@ -20,7 +20,7 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
-import type { HourlyPoint } from "@/lib/stats/types";
+import type { HourlyPoint } from "@/games/stats/types";
 
 interface HourlyHeatmapChartProps {
 	series: HourlyPoint[];

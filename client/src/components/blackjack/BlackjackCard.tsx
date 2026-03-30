@@ -1,7 +1,7 @@
-import type { CardData, Rank, Suit } from "@/lib/blackjack";
+import type { CardData, Rank, Suit } from "@/games/blackjack/types";
 import { cn } from "@/lib/utils";
 
-export type { CardData, Rank, Suit } from "@/lib/blackjack";
+export type { CardData, Rank, Suit } from "@/games/blackjack/types";
 
 interface BlackjackCardProps {
 	card: CardData;

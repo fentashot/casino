@@ -13,8 +13,8 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
+import type { DailyPoint } from "@/games/stats/types";
 import { formatCurrency } from "@/lib/format";
-import type { DailyPoint } from "@/lib/stats/types";
 
 interface DailyBarChartProps {
 	series: DailyPoint[];

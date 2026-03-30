@@ -1,8 +1,8 @@
-import type { CardData, HandResult } from "@/lib/blackjack";
+import type { CardData, HandResult } from "@/games/blackjack/types";
 import { cn } from "@/lib/utils";
 import { BlackjackCard } from "./BlackjackCard";
 
-export type { HandResult } from "@/lib/blackjack";
+export type { HandResult } from "@/games/blackjack/types";
 
 interface BlackjackHandProps {
 	cards: CardData[];

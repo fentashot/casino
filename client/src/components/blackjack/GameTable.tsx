@@ -1,5 +1,5 @@
-import type { BlackjackGameState } from "@/lib/blackjack";
-import { handTotal, isSoftHand } from "@/lib/blackjack";
+import { handTotal, isSoftHand } from "@/games/blackjack/cardHelpers";
+import type { BlackjackGameState } from "@/games/blackjack/types";
 import { cn } from "@/lib/utils";
 import { BlackjackHand } from "./BlackjackHand";
 import { ResultBanner, type ResultVariant } from "./ResultBanner";

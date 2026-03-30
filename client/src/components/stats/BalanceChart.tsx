@@ -18,8 +18,8 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
+import type { BalancePoint } from "@/games/stats/types";
 import { formatCurrency } from "@/lib/format";
-import type { BalancePoint } from "@/lib/stats/types";
 
 interface BalanceChartProps {
 	series: BalancePoint[];

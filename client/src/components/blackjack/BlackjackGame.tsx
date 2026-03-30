@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { useBlackjack } from "@/hooks/useBlackjack";
-import type { BlackjackGameState } from "@/lib/blackjack";
+import type { BlackjackGameState } from "@/games/blackjack/types";
+import { useBlackjack } from "@/games/blackjack/useBlackjack";
 import { GameControls } from "./GameControls";
 import { GameTable } from "./GameTable";
 import type { ResultVariant } from "./ResultBanner";
