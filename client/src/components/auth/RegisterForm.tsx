@@ -221,12 +221,6 @@ export default function RegisterForm() {
 						</div>
 					</div>
 
-					{/* Terms note */}
-					<p className="text-center text-xs text-muted-foreground leading-relaxed">
-						By creating an account, you agree to our terms of service and
-						acknowledge that all games use provably fair algorithms.
-					</p>
-
 					{/* Footer link */}
 					<p className="text-center text-sm text-muted-foreground">
 						Already have an account?{" "}

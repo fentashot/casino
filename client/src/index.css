@@ -165,6 +165,69 @@
    ============================================================================ */
 
 @layer components {
+	.landing-three-root {
+		@apply pointer-events-none absolute inset-0 z-0;
+		background:
+			radial-gradient(
+				ellipse at -20% 15%,
+				hsl(158 70% 28% / .4) 0%,
+				transparent 45%
+			),
+			radial-gradient(
+				ellipse at 110% 80%,
+				hsl(200 80% 30% / 0.25) 0%,
+				transparent 42%
+			),
+			radial-gradient(
+				ellipse at 43% 110%,
+				hsl(180 60% 20% / .3) 0%,
+				transparent 50%
+			),
+			linear-gradient(170deg, hsl(0 0% 4%) 0%, hsl(210 15% 7%) 50%, hsl(0 0% 4%) 100%);
+	}
+	.landing-three-root canvas {
+		@apply h-full w-full;
+		opacity: 0.92;
+	}
+
+	.landing-three-overlay {
+		@apply absolute inset-0;
+		background-image: radial-gradient(
+			hsl(var(--border) / 0.25) 1px,
+			transparent 1px
+		);
+		background-size: 30px 30px;
+		mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 100%);
+		-webkit-mask-image: linear-gradient(
+			to bottom,
+			transparent 0%,
+			black 22%,
+			black 100%
+		);
+		opacity: 0.4;
+	}
+
+	.landing-three-root[data-reduced-motion="true"] {
+		background:
+			radial-gradient(
+				ellipse at 20% 30%,
+				hsl(158 70% 28% / 0.35) 0%,
+				transparent 55%
+			),
+			radial-gradient(
+				ellipse at 80% 65%,
+				hsl(200 80% 30% / 0.28) 0%,
+				transparent 50%
+			),
+			linear-gradient(170deg, hsl(0 0% 4%) 0%, hsl(210 15% 7%) 50%, hsl(0 0% 4%) 100%);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.landing-three-root canvas {
+			display: none;
+		}
+	}
+
 	/* Flat card surface */
 	.glass {
 		background: hsl(var(--card));

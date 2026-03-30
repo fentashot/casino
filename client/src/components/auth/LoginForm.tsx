@@ -89,7 +89,7 @@ export default function LoginForm() {
 					<div className="grid grid-cols-3 gap-3">
 						<Button
 							variant="outline"
-							className="h-11 border-border/60 bg-card hover:bg-muted/60 transition-all"
+							className="h-11 border-border/60 bg-card hover:bg-muted/60 transition-all hover:text-white"
 							disabled={loading}
 							onClick={() => handleSocialLogin("github")}
 							title="Login with GitHub"
@@ -110,7 +110,7 @@ export default function LoginForm() {
 						</Button>
 						<Button
 							variant="outline"
-							className="h-11 border-border/60 bg-card hover:bg-muted/60 transition-all"
+							className="h-11 border-border/60 bg-card hover:bg-muted/60 transition-all hover:text-white"
 							disabled={loading}
 							onClick={() => handleSocialLogin("discord")}
 							title="Login with Discord"
