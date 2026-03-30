@@ -11,7 +11,7 @@ import {
 import { useAuth } from "@/auth-context";
 
 import { StatsSummaryCards } from "@/components/stats";
-import { useStatsSummary } from "@/hooks/useStats";
+import { useStatsSummary } from "@/games/stats/useStats";
 
 export const Route = createFileRoute("/_authenticated/games/")({
 	component: GamesIndex,

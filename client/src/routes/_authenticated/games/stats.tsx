@@ -40,7 +40,7 @@ import {
 	useHourlyHeatmap,
 	useRecentRounds,
 	useStatsOverview,
-} from "@/hooks/useStats";
+} from "@/games/stats/useStats";
 import { formatCurrency, formatProfit } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/games/stats")({
