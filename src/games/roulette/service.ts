@@ -9,8 +9,9 @@ import * as crypto from "crypto";
 import { z } from "zod";
 import { type Result, ok, err, ErrorCode } from "../../lib/errors";
 import { db } from "../../db/postgres";
-import { casinoServerSeed, casinoSpin, casinoBet, userBalance } from "../../db/schema";
+import { casinoSpin, casinoBet, userBalance } from "../../db/schema";
 import { eq, desc } from "drizzle-orm";
+import { balanceQueries, seedQueries } from "../../db/queries";
 import { betSchema } from "../../zodTypes";
 import { calculateWinnings, computeHmac, hashToNumber, redNumbers } from "../../lib/casinoHelpers";
 import type { SpinResponse } from "../../types";
@@ -28,58 +29,6 @@ import type {
    Private inline DB functions — Seed
    ============================================================================ */
 
-async function findActiveSeed() {
-  const record = await db.query.casinoServerSeed.findFirst({
-    where: eq(casinoServerSeed.active, true),
-  });
-  return record ?? null;
-}
-
-async function findActiveSeedHash() {
-  const record = await db.query.casinoServerSeed.findFirst({
-    where: eq(casinoServerSeed.active, true),
-    columns: { hash: true },
-  });
-  return record ?? null;
-}
-
-async function findSeedById(seedId: string) {
-  const record = await db.query.casinoServerSeed.findFirst({
-    where: eq(casinoServerSeed.id, seedId),
-  });
-  return record ?? null;
-}
-
-async function findAllSeedSummaries(): Promise<SeedSummary[]> {
-  return db.query.casinoServerSeed.findMany({
-    orderBy: desc(casinoServerSeed.createdAt),
-    columns: {
-      id: true,
-      hash: true,
-      active: true,
-      createdAt: true,
-      revealedAt: true,
-    },
-  });
-}
-
-async function deactivateAllSeeds() {
-  await db
-    .update(casinoServerSeed)
-    .set({ active: false })
-    .where(eq(casinoServerSeed.active, true));
-}
-
-async function createSeed(id: string, seed: string, hash: string) {
-  await db.insert(casinoServerSeed).values({ id, seed, hash, active: true });
-}
-
-async function markSeedRevealed(seedId: string) {
-  await db
-    .update(casinoServerSeed)
-    .set({ revealedAt: new Date() })
-    .where(eq(casinoServerSeed.id, seedId));
-}
 
 /* ============================================================================
    Private inline DB functions — Spin
@@ -145,65 +94,27 @@ async function createSpinWithBets(
   });
 }
 
-/* ============================================================================
-   Private inline DB functions — Balance
-   ============================================================================ */
-
-async function findBalanceByUserId(userId: string) {
-  const record = await db.query.userBalance.findFirst({
-    where: eq(userBalance.userId, userId),
-  });
-  return record ?? null;
-}
-
-async function getBalanceAmountOnly(userId: string) {
-  const record = await db.query.userBalance.findFirst({
-    where: eq(userBalance.userId, userId),
-    columns: { balance: true },
-  });
-  return record ?? null;
-}
-
-async function getBalanceNonce(userId: string) {
-  const record = await db.query.userBalance.findFirst({
-    where: eq(userBalance.userId, userId),
-    columns: { lastNonce: true },
-  });
-  return record ?? null;
-}
-
-async function createDefaultBalance(userId: string) {
-  await db.insert(userBalance).values({ userId, balance: "100000.00", lastNonce: 0 });
-  return { userId, balance: "100000.00", lastNonce: 0 };
-}
-
-async function findOrCreateBalance(userId: string): Promise<{ balance: number }> {
-  const existing = await findBalanceByUserId(userId);
-  if (existing) return { balance: Number(existing.balance) };
-  await createDefaultBalance(userId);
-  return { balance: 100000 };
-}
 
 /* ============================================================================
    Seed Operations
    ============================================================================ */
 
 export async function getActiveSeedHash(): Promise<Result<SeedHashResult>> {
-  const activeSeed = await findActiveSeedHash();
+  const activeSeed = await seedQueries.findActiveHash();
   if (!activeSeed) {
-    return err(ErrorCode.NO_ACTIVE_SEED);
+    return err(ErrorCode.NO_ACTIVE_SEED, "No active server seed — contact support");
   }
   return ok({ serverSeedHash: activeSeed.hash });
 }
 
 export async function rotateSeed(): Promise<Result<RotateSeedResult>> {
-  await deactivateAllSeeds();
+  await seedQueries.deactivateAll();
 
   const newSeed = crypto.randomBytes(32).toString("hex");
   const newHash = crypto.createHash("sha256").update(newSeed).digest("hex");
   const newId = crypto.randomBytes(16).toString("hex");
 
-  await createSeed(newId, newSeed, newHash);
+  await seedQueries.create(newId, newSeed, newHash);
   return ok({ ok: true, newSeedHash: newHash });
 }
 
@@ -214,7 +125,7 @@ export async function revealSeed(
     return err(ErrorCode.MISSING_SEED_ID, "Seed ID is required to reveal");
   }
 
-  const seedRecord = await findSeedById(seedId);
+  const seedRecord = await seedQueries.findById(seedId);
   if (!seedRecord) {
     return err(ErrorCode.SEED_NOT_FOUND, `Seed ${seedId} not found`);
   }
@@ -223,12 +134,12 @@ export async function revealSeed(
     return err(ErrorCode.SEED_STILL_ACTIVE, "Cannot reveal an active seed — rotate first");
   }
 
-  await markSeedRevealed(seedId);
+  await seedQueries.markRevealed(seedId);
   return ok({ seed: seedRecord.seed });
 }
 
 export async function listSeeds(): Promise<Result<{ seeds: SeedSummary[] }>> {
-  const seeds = await findAllSeedSummaries();
+  const seeds = await seedQueries.findAllSummaries();
   return ok({ seeds });
 }
 
@@ -237,12 +148,12 @@ export async function listSeeds(): Promise<Result<{ seeds: SeedSummary[] }>> {
    ============================================================================ */
 
 export async function getBalance(userId: string): Promise<Result<BalanceResult>> {
-  const { balance } = await findOrCreateBalance(userId);
+  const { balance } = await balanceQueries.findOrCreateBalance(userId);
   return ok({ balance });
 }
 
 export async function getNonce(userId: string): Promise<Result<NonceResult>> {
-  const record = await getBalanceNonce(userId);
+  const record = await balanceQueries.getLastNonce(userId);
   return ok({ nextNonce: (record?.lastNonce || 0) + 1 });
 }
 
@@ -261,7 +172,7 @@ export async function executeSpin(
   }
 
   // 2. Get active server seed
-  const serverSeedRecord = await findActiveSeed();
+  const serverSeedRecord = await seedQueries.findActive();
   if (!serverSeedRecord) {
     return err(ErrorCode.NO_ACTIVE_SEED, "No active server seed — contact support");
   }
@@ -270,7 +181,7 @@ export async function executeSpin(
   const totalBet = input.bets.reduce((sum, bet) => sum + bet.amount, 0);
 
   // 4. Check user balance
-  const balanceRecord = await findBalanceByUserId(userId);
+  const balanceRecord = await balanceQueries.findByUserId(userId);
   if (!balanceRecord || Number(balanceRecord.balance) < totalBet) {
     const current = balanceRecord ? Number(balanceRecord.balance) : 0;
     return err(

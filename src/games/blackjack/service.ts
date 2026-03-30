@@ -1,15 +1,15 @@
 /* ============================================================================
    Blackjack Service — orchestrates game logic, balance sync, and persistence.
-   
+
    Game logic (pure functions) lives in ./engine/.
-   DB operations are inlined (no separate repository layer).
+   DB operations use centralized query helpers from db/queries/.
    This service is the glue between them.
    ============================================================================ */
 
 import { type Result, ok, err, ErrorCode } from "../../lib/errors";
 import { db } from "../../db/postgres";
-import { userBalance, blackjackRound } from "../../db/schema";
-import { eq } from "drizzle-orm";
+import { blackjackRound } from "../../db/schema";
+import { balanceQueries } from "../../db/queries";
 import * as crypto from "crypto";
 import type { BlackjackGameState } from "./engine";
 import {
@@ -229,30 +229,13 @@ export function getShoeInfoForUser(userId: string): Result<ShoeInfoResult> {
    ============================================================================ */
 
 async function syncBalance(userId: string, newBalance: number): Promise<void> {
-  await db
-    .update(userBalance)
-    .set({ balance: newBalance.toString() })
-    .where(eq(userBalance.userId, userId));
+  await balanceQueries.updateBalance(userId, newBalance);
 }
 
 async function findOrCreateBalance(
   userId: string,
 ): Promise<{ balance: number }> {
-  const existing = await db.query.userBalance.findFirst({
-    where: eq(userBalance.userId, userId),
-  });
-  
-  if (existing) {
-    return { balance: Number(existing.balance) };
-  }
-  
-  await db.insert(userBalance).values({
-    userId,
-    balance: DEFAULT_BALANCE,
-    lastNonce: DEFAULT_NONCE,
-  });
-  
-  return { balance: Number(DEFAULT_BALANCE) };
+  return balanceQueries.findOrCreateBalance(userId);
 }
 
 /* ============================================================================

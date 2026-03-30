@@ -1,14 +1,14 @@
 /* ============================================================================
    Plinko Service — orchestrates game logic and persistence
-   
+
    Game logic (pure functions) lives in ./engine.ts.
-   DB operations are inlined (no separate repository layer).
+   DB operations use centralized query helpers from db/queries/.
    ============================================================================ */
 
 import { type Result, ok, err, ErrorCode } from "../../lib/errors";
 import { db } from "../../db/postgres";
-import { userBalance, plinkoRound } from "../../db/schema";
-import { eq } from "drizzle-orm";
+import { plinkoRound } from "../../db/schema";
+import { balanceQueries } from "../../db/queries";
 import * as crypto from "crypto";
 import { dropBall, type Difficulty } from "./engine";
 import type { PlinkoPlayResult } from "./types";
@@ -64,35 +64,14 @@ export async function play(
   });
 }
 
-/* ============================================================================
-   Internal Helpers — Balance (inlined from balance.repository.ts)
-   ============================================================================ */
-
 async function findOrCreateBalance(
   userId: string,
 ): Promise<{ balance: number }> {
-  const existing = await db.query.userBalance.findFirst({
-    where: eq(userBalance.userId, userId),
-  });
-  
-  if (existing) {
-    return { balance: Number(existing.balance) };
-  }
-  
-  await db.insert(userBalance).values({
-    userId,
-    balance: DEFAULT_BALANCE,
-    lastNonce: DEFAULT_NONCE,
-  });
-  
-  return { balance: Number(DEFAULT_BALANCE) };
+  return balanceQueries.findOrCreateBalance(userId);
 }
 
 async function updateBalance(userId: string, newBalance: number): Promise<void> {
-  await db
-    .update(userBalance)
-    .set({ balance: newBalance.toString() })
-    .where(eq(userBalance.userId, userId));
+  return balanceQueries.updateBalance(userId, newBalance);
 }
 
 /* ============================================================================
