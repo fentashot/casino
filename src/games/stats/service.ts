@@ -12,7 +12,10 @@
 import { type Result, ok } from "../../lib/errors";
 import { db } from "../../db/postgres";
 import { casinoSpin, blackjackRound, plinkoRound } from "../../db/schema";
-import { eq, asc, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
+
+/** Cap per-game rows loaded into memory to prevent OOM on heavy users. */
+const MAX_ROWS_PER_GAME = 10_000;
 
 /* ============================================================================
    Types — exported from the service
@@ -478,11 +481,13 @@ export function buildRecentRounds(
 async function findRouletteRounds(
   userId: string,
 ): Promise<RoundRecord[]> {
-  return db.query.casinoSpin.findMany({
+  const rows = await db.query.casinoSpin.findMany({
     where: eq(casinoSpin.userId, userId),
     columns: { totalBet: true, totalWin: true, createdAt: true },
-    orderBy: asc(casinoSpin.createdAt),
+    orderBy: desc(casinoSpin.createdAt),
+    limit: MAX_ROWS_PER_GAME,
   });
+  return rows.reverse();
 }
 
 /**
@@ -491,11 +496,13 @@ async function findRouletteRounds(
 async function findBlackjackRounds(
   userId: string,
 ): Promise<RoundRecord[]> {
-  return db.query.blackjackRound.findMany({
+  const rows = await db.query.blackjackRound.findMany({
     where: eq(blackjackRound.userId, userId),
     columns: { totalBet: true, totalWin: true, createdAt: true },
-    orderBy: asc(blackjackRound.createdAt),
+    orderBy: desc(blackjackRound.createdAt),
+    limit: MAX_ROWS_PER_GAME,
   });
+  return rows.reverse();
 }
 
 /**
@@ -563,6 +570,7 @@ async function findRouletteBetWins(
   return db.query.casinoSpin.findMany({
     where: eq(casinoSpin.userId, userId),
     columns: { totalBet: true, totalWin: true },
+    limit: MAX_ROWS_PER_GAME,
   });
 }
 
@@ -575,6 +583,7 @@ async function findBlackjackBetWins(
   return db.query.blackjackRound.findMany({
     where: eq(blackjackRound.userId, userId),
     columns: { totalBet: true, totalWin: true },
+    limit: MAX_ROWS_PER_GAME,
   });
 }
 
@@ -587,6 +596,7 @@ async function findRouletteRoundsUnordered(
   return db.query.casinoSpin.findMany({
     where: eq(casinoSpin.userId, userId),
     columns: { totalBet: true, totalWin: true, createdAt: true },
+    limit: MAX_ROWS_PER_GAME,
   });
 }
 
@@ -599,6 +609,7 @@ async function findBlackjackRoundsUnordered(
   return db.query.blackjackRound.findMany({
     where: eq(blackjackRound.userId, userId),
     columns: { totalBet: true, totalWin: true, createdAt: true },
+    limit: MAX_ROWS_PER_GAME,
   });
 }
 
@@ -612,9 +623,10 @@ async function findPlinkoRounds(
   const rows = await db.query.plinkoRound.findMany({
     where: eq(plinkoRound.userId, userId),
     columns: { bet: true, totalWin: true, createdAt: true },
-    orderBy: asc(plinkoRound.createdAt),
+    orderBy: desc(plinkoRound.createdAt),
+    limit: MAX_ROWS_PER_GAME,
   });
-  return rows.map((r) => ({ totalBet: r.bet, totalWin: r.totalWin, createdAt: r.createdAt }));
+  return rows.reverse().map((r) => ({ totalBet: r.bet, totalWin: r.totalWin, createdAt: r.createdAt }));
 }
 
 /**
@@ -649,6 +661,7 @@ async function findPlinkoBetWins(
   const rows = await db.query.plinkoRound.findMany({
     where: eq(plinkoRound.userId, userId),
     columns: { bet: true, totalWin: true },
+    limit: MAX_ROWS_PER_GAME,
   });
   return rows.map((r) => ({ totalBet: r.bet, totalWin: r.totalWin }));
 }
@@ -662,6 +675,7 @@ async function findPlinkoRoundsUnordered(
   const rows = await db.query.plinkoRound.findMany({
     where: eq(plinkoRound.userId, userId),
     columns: { bet: true, totalWin: true, createdAt: true },
+    limit: MAX_ROWS_PER_GAME,
   });
   return rows.map((r) => ({ totalBet: r.bet, totalWin: r.totalWin, createdAt: r.createdAt }));
 }

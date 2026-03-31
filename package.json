@@ -16,26 +16,24 @@
     "d:dev": "docker build -t casino . && docker run --rm -p 3000:3000 --env-file .env casino"
   },
   "dependencies": {
-    "@hono/zod-validator": "^0.4.3",
-    "@kinde-oss/kinde-typescript-sdk": "^2.13.0",
-    "@libsql/client": "^0.15.15",
-    "better-auth": "^1.3.27",
-    "dotenv": "^17.2.3",
-    "drizzle-orm": "^0.45.1",
+    "@hono/zod-validator": "^0.7.6",
+    "better-auth": "^1.5.6",
+    "dotenv": "^17.3.1",
+    "drizzle-orm": "^0.45.2",
     "expense-tracker": ".",
-    "hono": "^4.10.1",
+    "hono": "^4.12.9",
     "hono-rate-limiter": "^0.5.3",
     "ioredis": "^5.10.1",
     "postgres": "^3.4.8",
-    "zod": "^3.25.76"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/bun": "latest",
+    "@types/bun": "^1.3.11",
     "@types/ioredis": "^5.0.0",
-    "@types/pg": "^8.16.0",
-    "baseline-browser-mapping": "latest",
-    "concurrently": "^8.2.2",
-    "drizzle-kit": "^0.31.5",
-    "tsx": "^4.20.6"
+    "@types/pg": "^8.20.0",
+    "baseline-browser-mapping": "^2.10.12",
+    "concurrently": "^9.2.1",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.21.0"
   }
 }

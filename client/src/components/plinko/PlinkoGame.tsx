@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { usePlinkoCanvas } from "@/games/plinko/usePlinkoCanvas";
 import { usePlinkoGame } from "@/games/plinko/usePlinkoGame";
+import { formatBalance, formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const DIFFICULTY_OPTIONS: { value: Difficulty; label: string }[] = [
@@ -39,7 +40,7 @@ export function PlinkoGame() {
 							Bet Amount
 						</span>
 						<span className="text-xs font-mono text-muted-foreground">
-							{game.balance.toLocaleString("pl-PL")} PLN
+							{formatBalance(game.balance)} PLN
 						</span>
 					</div>
 
@@ -166,9 +167,8 @@ export function PlinkoGame() {
 						</div>
 						<div className="text-xs font-mono text-muted-foreground">
 							{game.lastResult.win > 0
-								? `+${game.lastResult.win.toLocaleString("pl-PL")}`
-								: `-${game.bet.toLocaleString("pl-PL")}`}{" "}
-							PLN
+								? `+${formatCurrency(game.lastResult.win)}`
+								: `-${formatCurrency(game.bet)}`}
 						</div>
 					</div>
 				)}

@@ -1,6 +1,6 @@
 /* ============================================================================
    Blackjack – Shoe Manager
-   Per-user shoe persistence, card drawing, and automatic reshuffling.
+   Per-user shoe persistence via Redis (primary) + Postgres (backup).
    ============================================================================ */
 
 import * as crypto from "crypto";
@@ -10,37 +10,27 @@ import { buildShoe, shuffleShoe } from "./cardEngine";
 import { db } from "../../../db/postgres";
 import { blackjackShoe } from "../../../db/schema";
 import { eq } from "drizzle-orm";
+import { getRedis } from "../../../lib/redis";
 
-/** In-memory shoe store keyed by userId */
-const shoeStore = new Map<string, { shoe: UserShoe; lastAccessedAt: number }>();
-
-/** Number of cards to burn after a fresh shuffle (standard casino procedure) */
 const BURN_COUNT = 1;
-const SHOE_CACHE_TTL_MS = Number(process.env.BLACKJACK_SHOE_CACHE_TTL_MS ?? 30 * 60 * 1000);
+const SHOE_TTL_S = 24 * 60 * 60; // 24h
 
-function nowMs(): number {
-  return Date.now();
+function shoeKey(userId: string): string {
+  return `blackjack:shoe:${userId}`;
 }
 
-function cleanupStaleShoes(): void {
-  const cutoff = nowMs() - SHOE_CACHE_TTL_MS;
-  for (const [userId, entry] of shoeStore.entries()) {
-    if (entry.lastAccessedAt < cutoff) {
-      shoeStore.delete(userId);
-    }
+async function getCachedShoe(userId: string): Promise<UserShoe | null> {
+  const raw = await getRedis().get(shoeKey(userId));
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as UserShoe;
+  } catch {
+    return null;
   }
 }
 
-function touchShoe(userId: string, shoe: UserShoe): void {
-  shoeStore.set(userId, { shoe, lastAccessedAt: nowMs() });
-}
-
-function getCachedShoe(userId: string): UserShoe | undefined {
-  cleanupStaleShoes();
-  const entry = shoeStore.get(userId);
-  if (!entry) return undefined;
-  touchShoe(userId, entry.shoe);
-  return entry.shoe;
+async function saveShoe(userId: string, shoe: UserShoe): Promise<void> {
+  await getRedis().set(shoeKey(userId), JSON.stringify(shoe), "EX", SHOE_TTL_S);
 }
 
 function parsePersistedShoe(raw: unknown): UserShoe | null {
@@ -64,7 +54,7 @@ function parsePersistedShoe(raw: unknown): UserShoe | null {
 }
 
 export async function hydrateShoe(userId: string): Promise<void> {
-  if (getCachedShoe(userId)) return;
+  if (await getCachedShoe(userId)) return;
 
   const persisted = await db.query.blackjackShoe.findFirst({
     where: eq(blackjackShoe.userId, userId),
@@ -73,11 +63,11 @@ export async function hydrateShoe(userId: string): Promise<void> {
 
   const shoe = parsePersistedShoe(persisted.shoe);
   if (!shoe) return;
-  touchShoe(userId, shoe);
+  await saveShoe(userId, shoe);
 }
 
 export async function persistShoe(userId: string): Promise<void> {
-  const shoe = getCachedShoe(userId);
+  const shoe = await getCachedShoe(userId);
   if (!shoe) return;
 
   await db
@@ -96,8 +86,8 @@ export async function persistShoe(userId: string): Promise<void> {
  * Get or create a shoe for the given user.
  * Automatically reshuffles when penetration exceeds the threshold.
  */
-export function getOrBuildShoe(userId: string): UserShoe {
-  const existing = getCachedShoe(userId);
+export async function getOrBuildShoe(userId: string): Promise<UserShoe> {
+  const existing = await getCachedShoe(userId);
 
   if (existing) {
     const penetration = existing.index / existing.totalSize;
@@ -113,15 +103,15 @@ export function getOrBuildShoe(userId: string): UserShoe {
  * Draw a single card from the user's shoe.
  * Rebuilds the shoe if exhausted (safety net — shouldn't normally happen).
  */
-export function drawFromShoe(userId: string): Card {
-  let shoe = getCachedShoe(userId);
+export async function drawFromShoe(userId: string): Promise<Card> {
+  let shoe = await getCachedShoe(userId);
 
   if (!shoe || shoe.index >= shoe.cards.length) {
-    shoe = rebuildShoe(userId);
+    shoe = await rebuildShoe(userId);
   }
 
   const card = shoe.cards[shoe.index++];
-  touchShoe(userId, shoe);
+  await saveShoe(userId, shoe);
   return card;
 }
 
@@ -133,7 +123,7 @@ export async function getShoeInfo(
   userId: string,
 ): Promise<{ cardsRemaining: number; penetration: number } | null> {
   await hydrateShoe(userId);
-  const shoe = getCachedShoe(userId);
+  const shoe = await getCachedShoe(userId);
   if (!shoe) return null;
 
   const cardsRemaining = shoe.totalSize - shoe.index;
@@ -145,33 +135,26 @@ export async function getShoeInfo(
 /**
  * Explicitly clear a user's shoe (e.g. on logout or admin reset).
  */
-export function clearShoe(userId: string): void {
-  shoeStore.delete(userId);
-}
-
-/**
- * Get the total number of shoes currently in memory (for monitoring).
- */
-export function getShoeCount(): number {
-  return shoeStore.size;
+export async function clearShoe(userId: string): Promise<void> {
+  await getRedis().del(shoeKey(userId));
 }
 
 /* ============================================================================
    Internal helpers
    ============================================================================ */
 
-function rebuildShoe(userId: string): UserShoe {
+async function rebuildShoe(userId: string): Promise<UserShoe> {
   const seedHex = crypto.randomBytes(32).toString("hex");
   const raw = buildShoe(DECK_COUNT);
   const shuffled = shuffleShoe(raw, seedHex);
 
   const shoe: UserShoe = {
     cards: shuffled,
-    index: BURN_COUNT, // skip burn card(s)
+    index: BURN_COUNT,
     totalSize: shuffled.length,
     seedHex,
   };
 
-  touchShoe(userId, shoe);
+  await saveShoe(userId, shoe);
   return shoe;
 }

@@ -102,12 +102,12 @@ export async function deal(
       return { errorCode: ErrorCode.INTERNAL_ERROR } as const;
     }
 
-    const currentBalance = Number((lockedBalance[0] as any).balance);
+    const currentBalance = Number((lockedBalance[0] as { balance: string }).balance);
     if (currentBalance < bet) {
       return { errorCode: ErrorCode.INSUFFICIENT_FUNDS } as const;
     }
 
-    const nextGame = dealGame(bet, currentBalance, userId);
+    const nextGame = await dealGame(bet, currentBalance, userId);
 
     await tx
       .update(userBalance)
@@ -213,14 +213,14 @@ export async function handleAction(
   let updated: BlackjackGameState;
   try {
     await hydrateShoe(userId);
-    updated = executeAction(action, game);
+    updated = await executeAction(action, game);
   } catch (e) {
     return err(ErrorCode.VALIDATION_ERROR, (e as Error).message);
   }
 
   // Trigger dealer play when all hands are done
   if (shouldTriggerDealer(updated)) {
-    updated = resolveDealerAndSettle(updated);
+    updated = await resolveDealerAndSettle(updated);
   }
 
   // Apply delta to DB balance (never overwrite with stale snapshot)
@@ -374,10 +374,10 @@ function validateAction(
   }
 }
 
-function executeAction(
+async function executeAction(
   action: PlayerAction,
   game: BlackjackGameState,
-): BlackjackGameState {
+): Promise<BlackjackGameState> {
   switch (action) {
     case "hit":
       return hitHand(game);

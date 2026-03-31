@@ -13,19 +13,19 @@ import { drawFromShoe, getOrBuildShoe } from "./shoeManager";
    Deal — Start a new round
    ============================================================================ */
 
-export function dealGame(
+export async function dealGame(
   bet: number,
   balance: number,
   userId: string,
-): BlackjackGameState {
+): Promise<BlackjackGameState> {
   // Ensure shoe is ready
-  getOrBuildShoe(userId);
+  await getOrBuildShoe(userId);
 
   // Standard deal order: player, dealer(hidden), player, dealer(visible)
-  const p1 = drawFromShoe(userId);
-  const d1: Card = { ...drawFromShoe(userId), hidden: true };
-  const p2 = drawFromShoe(userId);
-  const d2 = drawFromShoe(userId);
+  const p1 = await drawFromShoe(userId);
+  const d1: Card = { ...await drawFromShoe(userId), hidden: true };
+  const p2 = await drawFromShoe(userId);
+  const d2 = await drawFromShoe(userId);
 
   const gameId = crypto.randomBytes(16).toString("hex");
   const now = new Date().toISOString();
@@ -146,11 +146,11 @@ export function resolveInsurance(
    Player Actions — Hit, Stand, Double Down, Split
    ============================================================================ */
 
-export function hitHand(game: BlackjackGameState): BlackjackGameState {
+export async function hitHand(game: BlackjackGameState): Promise<BlackjackGameState> {
   const updated = cloneGameState(game);
   const hand = updated.playerHands[updated.activeHandIndex];
 
-  const newCard = drawFromShoe(updated.userId);
+  const newCard = await drawFromShoe(updated.userId);
   hand.cards.push(newCard);
 
   const total = handTotal(hand.cards);
@@ -174,7 +174,7 @@ export function standHand(game: BlackjackGameState): BlackjackGameState {
   return updated;
 }
 
-export function doubleDown(game: BlackjackGameState): BlackjackGameState {
+export async function doubleDown(game: BlackjackGameState): Promise<BlackjackGameState> {
   const updated = cloneGameState(game);
   const hand = updated.playerHands[updated.activeHandIndex];
 
@@ -189,7 +189,7 @@ export function doubleDown(game: BlackjackGameState): BlackjackGameState {
   hand.bet *= 2;
   hand.doubled = true;
 
-  const newCard = drawFromShoe(updated.userId);
+  const newCard = await drawFromShoe(updated.userId);
   hand.cards.push(newCard);
 
   const total = handTotal(hand.cards);
@@ -203,7 +203,7 @@ export function doubleDown(game: BlackjackGameState): BlackjackGameState {
   return updated;
 }
 
-export function splitHand(game: BlackjackGameState): BlackjackGameState {
+export async function splitHand(game: BlackjackGameState): Promise<BlackjackGameState> {
   const updated = cloneGameState(game);
   const hand = updated.playerHands[updated.activeHandIndex];
 
@@ -221,13 +221,13 @@ export function splitHand(game: BlackjackGameState): BlackjackGameState {
   const isAceSplit = card1.rank === "A";
 
   // Replace current hand: first card + a new card
-  const firstNewCard = drawFromShoe(updated.userId);
+  const firstNewCard = await drawFromShoe(updated.userId);
   hand.cards = [card1, firstNewCard];
   hand.result = undefined;
   hand.splitAces = isAceSplit;
 
   // Second split hand
-  const secondNewCard = drawFromShoe(updated.userId);
+  const secondNewCard = await drawFromShoe(updated.userId);
   const newHand: Hand = {
     cards: [card2, secondNewCard],
     bet: hand.bet,
@@ -254,9 +254,9 @@ export function splitHand(game: BlackjackGameState): BlackjackGameState {
  * Play dealer hand according to "stand on hard 17, hit on soft 17" rule,
  * then settle all player hands.
  */
-export function resolveDealerAndSettle(
+export async function resolveDealerAndSettle(
   game: BlackjackGameState,
-): BlackjackGameState {
+): Promise<BlackjackGameState> {
   const updated = cloneGameState(game);
 
   // Reveal dealer's hidden card
@@ -274,7 +274,7 @@ export function resolveDealerAndSettle(
       const soft = isSoftHand(updated.dealerHand.cards);
 
       if (total < 17 || (total === 17 && soft)) {
-        updated.dealerHand.cards.push(drawFromShoe(updated.userId));
+        updated.dealerHand.cards.push(await drawFromShoe(updated.userId));
       } else {
         break;
       }

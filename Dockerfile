@@ -1,4 +1,4 @@
-FROM oven/bun:latest AS builder
+FROM oven/bun:1 AS builder
 
 WORKDIR /app
 
@@ -20,10 +20,11 @@ RUN bun x tsc && bun x vite build
 
 
 # Runtime image with Bun (bez buildowania serwera - uruchomimy źródło)
-FROM oven/bun:latest AS runtime
+FROM oven/bun:1 AS runtime
 WORKDIR /app
-# ENV NODE_ENV=production
-# ENV PORT=3000
+
+# Non-root user for security
+RUN addgroup --system --gid 1001 app && adduser --system --uid 1001 --ingroup app app
 
 # Kopiuj źródła zamiast dist
 COPY --from=builder /app/src ./src
@@ -33,6 +34,7 @@ COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 COPY --from=builder /app/client/dist ./client/dist
 
+USER app
 EXPOSE 3000
 
 # Uruchom źródło TypeScript bezpośrednio przez Bun

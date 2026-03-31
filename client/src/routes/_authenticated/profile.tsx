@@ -16,6 +16,7 @@ import { useState } from "react";
 import { useAuth } from "@/auth-context";
 import { AdminSeedPanel } from "@/components/admin/AdminSeedPanel";
 import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/lib/format";
 import { fetchHistory } from "@/lib/roulette/api";
 import { cn } from "@/lib/utils";
 
@@ -248,8 +249,8 @@ function Profile() {
 										)}
 									>
 										{won
-											? `+${Number(spin.totalWin).toLocaleString("pl-PL")}`
-											: `-${Number(spin.totalBet).toLocaleString("pl-PL")}`}
+											? `+${formatCurrency(Number(spin.totalWin))}`
+											: `-${formatCurrency(Number(spin.totalBet))}`}
 									</span>
 								</div>
 							);
@@ -394,15 +395,4 @@ function StatCard({
 			)}
 		</div>
 	);
-}
-
-/* ============================================================================
-   HELPERS
-   ============================================================================ */
-
-function formatCurrency(value: number): string {
-	return `${value.toLocaleString("pl-PL", {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
-	})} zł`;
 }

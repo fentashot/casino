@@ -63,7 +63,7 @@ async function findSpinByIdempotencyKey(key: string) {
     where: eq(casinoSpin.idempotencyKey, key),
     with: { bets: true },
   });
-  return (record as any) ?? null;
+  return record ?? null;
 }
 
 async function findSpinHistory(userId: string, limit: number, offset: number) {
@@ -98,8 +98,9 @@ async function createSpinWithBets(
     );
     if (locked.length === 0) return { insufficientFunds: true };
 
-    const balance = Number((locked[0] as any).balance);
-    const lastNonce = Number((locked[0] as any).last_nonce);
+    const row = locked[0] as { balance: string; last_nonce: string };
+    const balance = Number(row.balance);
+    const lastNonce = Number(row.last_nonce);
 
     if (balance < totalBet) return { insufficientFunds: true };
     if (nonce !== lastNonce + 1) return { invalidNonce: true };

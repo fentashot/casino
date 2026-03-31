@@ -10,14 +10,19 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, apiRequest } from "@/lib/api";
-import { getBlackjackSocket, destroyBlackjackSocket, type ServerMessage } from "@/lib/blackjackWs";
 import { playWinSound } from "@/lib/audio";
-import { canSplitHand } from "./cardHelpers";
 import {
-	type BlackjackAction,
-	type BlackjackGameState,
-	type InsuranceDecision,
-	type ShoeInfo,
+	type ClientMessage,
+	destroyBlackjackSocket,
+	getBlackjackSocket,
+	type ServerMessage,
+} from "@/lib/blackjackWs";
+import { canSplitHand } from "./cardHelpers";
+import type {
+	BlackjackAction,
+	BlackjackGameState,
+	InsuranceDecision,
+	ShoeInfo,
 } from "./types";
 import { useBlackjackAnimation } from "./useBlackjackAnimation";
 import {
@@ -131,7 +136,11 @@ export function useBlackjack(initialBalance = 0) {
 			if (msg.type === "error") {
 				const code = msg.payload.code;
 				// Route errors to appropriate notification handlers based on context
-				notify.showError(code, { ...DEAL_ERRORS, ...ACTION_ERRORS, ...INSURANCE_ERRORS });
+				notify.showError(code, {
+					...DEAL_ERRORS,
+					...ACTION_ERRORS,
+					...INSURANCE_ERRORS,
+				});
 				return;
 			}
 
@@ -156,7 +165,14 @@ export function useBlackjack(initialBalance = 0) {
 				handleGameResponse(game, isNewDeal ? 0 : prevShown, isNewDeal);
 			}
 		},
-		[notify, syncBalance, resetAnimation, handleGameResponse, queryClient, serverGame],
+		[
+			notify,
+			syncBalance,
+			resetAnimation,
+			handleGameResponse,
+			queryClient,
+			serverGame,
+		],
 	);
 
 	/* ── WebSocket lifecycle ───────────────────────────────────────────────── */
@@ -181,7 +197,7 @@ export function useBlackjack(initialBalance = 0) {
 
 	/* ── Actions ───────────────────────────────────────────────────────────── */
 
-	const send = useCallback((msg: Parameters<ReturnType<typeof getBlackjackSocket>["send"]>[0]) => {
+	const send = useCallback((msg: ClientMessage) => {
 		setIsLoading(true);
 		getBlackjackSocket().send(msg);
 	}, []);
@@ -225,8 +241,10 @@ export function useBlackjack(initialBalance = 0) {
 	const restoreGame = useCallback(async () => {
 		// Fetch state via HTTP fallback on mount / page restore
 		try {
-			const res = await api.blackjack.state.$get();
-			const data = await res.json() as { game: BlackjackGameState | null };
+			const data = await apiRequest<{ game: BlackjackGameState | null }>(
+				api.blackjack.state.$get(),
+				"Failed to restore game",
+			);
 			if (data.game) {
 				setServerGame(data.game);
 				restoreDisplayState(data.game);

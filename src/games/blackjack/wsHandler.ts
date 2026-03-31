@@ -6,24 +6,23 @@
 
 import * as BlackjackService from "./service";
 import { balanceQueries } from "../../db/queries";
+import { z } from "zod";
+import type { ClientMessage, ServerMessage } from "./wsTypes";
+
+export type { ClientMessage, ServerMessage } from "./wsTypes";
 
 /* ============================================================================
-   Protocol Types
+   Validation Schema
    ============================================================================ */
 
-export type ClientMessage =
-  | { type: "deal"; payload: { bet: number } }
-  | { type: "insurance"; payload: { decision: "take" | "skip" } }
-  | { type: "action"; payload: { action: "hit" | "stand" | "double" | "split" } }
-  | { type: "clear" }
-  | { type: "shoe_info" }
-  | { type: "ping" };
-
-export type ServerMessage =
-  | { type: "state"; payload: { game: object | null; balance: number } }
-  | { type: "shoe_info"; payload: { cardsRemaining: number | null; penetration: number | null } }
-  | { type: "error"; payload: { code: string; message?: string } }
-  | { type: "pong" };
+const clientMessageSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("deal"), payload: z.object({ bet: z.number().int().min(10).max(1_000_000) }) }),
+  z.object({ type: z.literal("insurance"), payload: z.object({ decision: z.enum(["take", "skip"]) }) }),
+  z.object({ type: z.literal("action"), payload: z.object({ action: z.enum(["hit", "stand", "double", "split"]) }) }),
+  z.object({ type: z.literal("clear") }),
+  z.object({ type: z.literal("shoe_info") }),
+  z.object({ type: z.literal("ping") }),
+]) satisfies z.ZodType<ClientMessage>;
 
 /* ============================================================================
    Handler
@@ -36,7 +35,13 @@ export async function handleMessage(
 ): Promise<void> {
   let msg: ClientMessage;
   try {
-    msg = JSON.parse(raw) as ClientMessage;
+    const parsed = JSON.parse(raw);
+    const validated = clientMessageSchema.safeParse(parsed);
+    if (!validated.success) {
+      send({ type: "error", payload: { code: "validation_error", message: validated.error.issues[0]?.message } });
+      return;
+    }
+    msg = validated.data;
   } catch {
     send({ type: "error", payload: { code: "invalid_json" } });
     return;
@@ -48,34 +53,19 @@ export async function handleMessage(
       return;
 
     case "deal": {
-      const bet = msg.payload?.bet;
-      if (typeof bet !== "number" || !Number.isInteger(bet) || bet < 10 || bet > 1_000_000) {
-        send({ type: "error", payload: { code: "validation_error", message: "bet must be integer 10–1000000" } });
-        return;
-      }
-      const result = await BlackjackService.deal(userId, bet);
+      const result = await BlackjackService.deal(userId, msg.payload.bet);
       await sendGameResult(userId, result, send);
       return;
     }
 
     case "insurance": {
-      const decision = msg.payload?.decision;
-      if (decision !== "take" && decision !== "skip") {
-        send({ type: "error", payload: { code: "validation_error", message: "decision must be take or skip" } });
-        return;
-      }
-      const result = await BlackjackService.handleInsurance(userId, decision);
+      const result = await BlackjackService.handleInsurance(userId, msg.payload.decision);
       await sendGameResult(userId, result, send);
       return;
     }
 
     case "action": {
-      const action = msg.payload?.action;
-      if (!["hit", "stand", "double", "split"].includes(action)) {
-        send({ type: "error", payload: { code: "validation_error", message: "invalid action" } });
-        return;
-      }
-      const result = await BlackjackService.handleAction(userId, action as "hit" | "stand" | "double" | "split");
+      const result = await BlackjackService.handleAction(userId, msg.payload.action);
       await sendGameResult(userId, result, send);
       return;
     }

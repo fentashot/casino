@@ -8,6 +8,9 @@ import { db } from "../postgres";
 import { userBalance } from "../schema";
 import { eq, sql } from "drizzle-orm";
 
+/** Shape returned by raw SQL `RETURNING balance` queries. */
+interface BalanceRow { balance: string }
+
 const DEFAULT_BALANCE = "100000.00";
 const DEFAULT_NONCE = 0;
 
@@ -105,7 +108,7 @@ export async function deductBalanceAtomic(
         RETURNING balance`,
   );
   if (rows.length === 0) return null;
-  return { newBalance: Number((rows[0] as any).balance) };
+  return { newBalance: Number((rows[0] as unknown as BalanceRow).balance) };
 }
 
 /**
@@ -126,5 +129,5 @@ export async function applyBalanceDelta(
         RETURNING balance`,
   );
   if (rows.length === 0) return null;
-  return { newBalance: Number((rows[0] as any).balance) };
+  return { newBalance: Number((rows[0] as unknown as BalanceRow).balance) };
 }

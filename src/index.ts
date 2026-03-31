@@ -1,4 +1,6 @@
+import "./lib/env"; // Validate env vars before anything else
 import { Hono } from "hono";
+import { sql } from "drizzle-orm";
 import { logger } from "hono/logger";
 import { serveStatic } from "hono/bun";
 import { auth, useAuthMiddleware, type AuthUser } from "./auth";
@@ -17,6 +19,8 @@ import {
 } from "./middleware";
 import { AppError, ErrorCode } from "./lib/errors";
 import { handleMessage, type ServerMessage } from "./games/blackjack/wsHandler";
+import { db } from "./db/postgres";
+import { getRedis } from "./lib/redis";
 
 interface Vars {
   Variables: {
@@ -33,7 +37,7 @@ const app = new Hono<Vars>();
 
 app.onError((err, c) => {
   if (err instanceof AppError) {
-    return c.json(err.toJSON(), err.statusCode as any);
+    return c.json(err.toJSON(), err.statusCode as import("hono/utils/http-status").ContentfulStatusCode);
   }
   console.error("[unhandled]", err);
   return c.json({ error: ErrorCode.INTERNAL_ERROR }, 500);
@@ -45,6 +49,20 @@ app.onError((err, c) => {
 
 app.use("*", securityHeaders);
 app.use("*", logger());
+
+/* ============================================================================
+   Health Check
+   ============================================================================ */
+
+app.get("/health", async (c) => {
+  try {
+    await db.execute(sql`SELECT 1`);
+    await getRedis().ping();
+    return c.json({ status: "ok" });
+  } catch (e) {
+    return c.json({ status: "degraded", error: (e as Error).message }, 503);
+  }
+});
 
 /* ============================================================================
    Rate Limiting
@@ -174,5 +192,24 @@ const server = Bun.serve<WsData>({
 });
 
 console.info(`[server] listening on port ${server.port}`);
+
+/* ============================================================================
+   Graceful Shutdown
+   ============================================================================ */
+
+let shuttingDown = false;
+
+async function gracefulShutdown(signal: string) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.info(`[server] ${signal} received, shutting down...`);
+  server.stop();
+  await getRedis().quit();
+  console.info("[server] shutdown complete");
+  process.exit(0);
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 export type ApiRoutes = typeof apiRoutes;

@@ -15,6 +15,7 @@ import AnimatedWheel from "@/components/roulette/RouletteWheel";
 import { SpinHistory } from "@/components/roulette/SpinHistory";
 import { Button } from "@/components/ui/button";
 import { useRoulette } from "@/games/roulette/useRoulette";
+import { formatCurrency, formatProfit } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/games/roulette")({
@@ -329,11 +330,10 @@ function ResultSidePanel({
 								isWin ? "text-emerald-400" : "text-red-400",
 							)}
 						>
-							{profitLoss > 0 ? "+" : ""}
-							{profitLoss.toLocaleString("pl-PL")} zł
+							{formatProfit(profitLoss)}
 						</span>
 						<span className="text-[11px] text-muted-foreground">
-							Bet: {spinData.totalBet.toLocaleString("pl-PL")} zł
+							Bet: {formatCurrency(spinData.totalBet)}
 						</span>
 					</div>
 				) : (

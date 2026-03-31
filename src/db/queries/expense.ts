@@ -5,7 +5,7 @@
 
 import { db } from "../postgres";
 import { expenseTable } from "../schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 export interface ExpenseInsert {
   title: string;
@@ -51,8 +51,13 @@ export async function create(data: ExpenseInsert) {
 }
 
 /**
- * Delete an expense by ID.
+ * Delete an expense by ID, only if it belongs to the given user.
+ * Returns true if a row was deleted, false otherwise.
  */
-export async function deleteById(id: number): Promise<void> {
-  await db.delete(expenseTable).where(eq(expenseTable.id, id));
+export async function deleteByIdAndUser(id: number, userId: string): Promise<boolean> {
+  const result = await db
+    .delete(expenseTable)
+    .where(and(eq(expenseTable.id, id), eq(expenseTable.userId, userId)))
+    .returning({ id: expenseTable.id });
+  return result.length > 0;
 }

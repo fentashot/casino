@@ -42,8 +42,11 @@ export async function createExpense(
   return ok(created);
 }
 
-export async function deleteExpense(id: number): Promise<Result<{ message: string }>> {
-  await expenseQueries.deleteById(id);
+export async function deleteExpense(userId: string, id: number): Promise<Result<{ message: string }>> {
+  const deleted = await expenseQueries.deleteByIdAndUser(id, userId);
+  if (!deleted) {
+    return err(ErrorCode.NOT_FOUND, "Expense not found");
+  }
   return ok({ message: "Expense deleted" });
 }
 

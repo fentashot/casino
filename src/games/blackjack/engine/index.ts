@@ -62,7 +62,6 @@ export {
   hydrateShoe,
   persistShoe,
   clearShoe,
-  getShoeCount,
 } from "./shoeManager";
 
 // Game Store — Redis-backed active game state (Postgres only for settlement)

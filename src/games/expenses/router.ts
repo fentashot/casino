@@ -21,8 +21,9 @@ export const expensesRouter = new Hono<Vars>()
     })
 
     .delete("/:id", zValidator("param", expenseIdSchema), async (c) => {
+        const { id: userId } = c.get("user") as User;
         const { id } = c.req.valid("param");
-        const result = await ExpenseService.deleteExpense(id);
+        const result = await ExpenseService.deleteExpense(userId, id);
         return mapResultToResponse(c, result);
     })
 

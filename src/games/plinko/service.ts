@@ -55,16 +55,18 @@ export async function play(
 
   // 4. Atomic: deduct bet + add win + insert round — all in one transaction
   const txResult = await db.transaction(async (tx) => {
-    const deducted = await tx.execute(
-      sql`UPDATE user_balance
-          SET balance = balance - ${bet}
+    // Lock the row — prevents concurrent plays from reading stale balance
+    const locked = await tx.execute(
+      sql`SELECT balance FROM user_balance
           WHERE user_id = ${userId}
-            AND balance >= ${bet}
-          RETURNING balance`,
+          FOR UPDATE`,
     );
-    if (deducted.length === 0) return null;
+    if (locked.length === 0) return null;
 
-    const newBalance = Number((deducted[0] as any).balance) + result.win;
+    const balance = Number((locked[0] as { balance: string }).balance);
+    if (balance < bet) return null;
+
+    const newBalance = balance - bet + result.win;
 
     await tx.execute(
       sql`UPDATE user_balance SET balance = ${newBalance} WHERE user_id = ${userId}`,

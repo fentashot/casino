@@ -5,6 +5,7 @@
 // - mapResultToResponse: helper to convert Result to Hono JSON responses
 
 import type { Context } from "hono";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 // Error codes — list of domain error identifiers
 
@@ -132,17 +133,17 @@ export function mapResultToResponse<T>(c: Context, result: Result<T>) {
   if (result.ok) {
     return c.json(result.data);
   }
-  return c.json(result.error.toJSON(), result.error.statusCode as any);
+  return c.json(result.error.toJSON(), result.error.statusCode as ContentfulStatusCode);
 }
 
 // Map a Result<T> to a Hono JSON response with a custom success status.
 export function mapResultToResponseWithStatus<T>(
   c: Context,
   result: Result<T>,
-  successStatus: number,
+  successStatus: ContentfulStatusCode,
 ) {
   if (result.ok) {
-    return c.json(result.data, successStatus as any);
+    return c.json(result.data, successStatus);
   }
-  return c.json(result.error.toJSON(), result.error.statusCode as any);
+  return c.json(result.error.toJSON(), result.error.statusCode as ContentfulStatusCode);
 }
