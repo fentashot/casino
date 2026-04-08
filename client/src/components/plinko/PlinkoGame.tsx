@@ -23,9 +23,8 @@ export function PlinkoGame() {
 		canvasRef,
 		rows: game.rows,
 		difficulty: game.difficulty,
-		activeBucketIdx: game.activeBucketIdx,
-		ballPath: game.ballPath,
-		onAnimationComplete: game.onAnimationComplete,
+		activeBalls: game.activeBalls,
+		onBallComplete: game.onBallComplete,
 	});
 
 	return (
@@ -116,11 +115,11 @@ export function PlinkoGame() {
 
 				{/* Bet button */}
 				<Button
-					className="w-full h-11 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground"
+					className="w-full h-11 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-50 active:scale-95 active:brightness-90 shadow-[0_4px_0_0_hsl(var(--primary)/0.5)] active:shadow-none active:translate-y-1"
 					disabled={!game.canPlay}
 					onClick={game.play}
 				>
-					{game.isPlaying || game.isAnimating ? "Dropping..." : "Bet"}
+					{game.hasActiveBalls ? "Drop Another!" : "Bet"}
 				</Button>
 
 				{/* Error feedback */}

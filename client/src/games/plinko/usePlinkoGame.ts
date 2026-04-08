@@ -12,6 +12,14 @@ export interface PlinkoResult {
 	bucket: number;
 }
 
+export interface ActiveBall {
+	id: number;
+	path: number[];
+	result: PlinkoResult;
+}
+
+const DROP_COOLDOWN_MS = 0;
+
 export function usePlinkoGame() {
 	const queryClient = useQueryClient();
 
@@ -25,39 +33,38 @@ export function usePlinkoGame() {
 	const [bet, setBet] = useState(100);
 	const [rows, setRows] = useState(16);
 	const [difficulty, setDifficulty] = useState<Difficulty>("expert");
-	const [isPlaying, setIsPlaying] = useState(false);
+	const [activeBalls, setActiveBalls] = useState<ActiveBall[]>([]);
 	const [lastResult, setLastResult] = useState<PlinkoResult | null>(null);
-	const [ballPath, setBallPath] = useState<number[] | null>(null);
 	const [showResult, setShowResult] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	// Consumed by the canvas hook to trigger the highlight after animation
-	const pendingResultRef = useRef<PlinkoResult | null>(null);
+	const nextBallId = useRef(0);
+	const lastDropTime = useRef(0);
+	const isRequesting = useRef(false);
 
 	const changeRows = (next: number) => {
 		setRows(next);
-		setBallPath(null);
+		setActiveBalls([]);
 		setLastResult(null);
 		setShowResult(false);
 		setError(null);
 	};
 
-	const onAnimationComplete = useCallback(() => {
-		const result = pendingResultRef.current;
-		if (!result) return;
+	const onBallComplete = useCallback((ballId: number, result: PlinkoResult) => {
+		setActiveBalls((prev) => prev.filter((b) => b.id !== ballId));
 		setLastResult(result);
 		setShowResult(true);
-		setIsPlaying(false);
 	}, []);
 
 	const play = async () => {
-		if (isPlaying) return;
-		setIsPlaying(true);
-		setLastResult(null);
-		setShowResult(false);
-		setBallPath(null);
+		const now = Date.now();
+		if (now - lastDropTime.current < DROP_COOLDOWN_MS) return;
+		if (isRequesting.current) return;
+		if (bet <= 0 || bet > balance) return;
+
+		lastDropTime.current = now;
+		isRequesting.current = true;
 		setError(null);
-		pendingResultRef.current = null;
 
 		try {
 			const result = await apiRequest<PlinkoPlayResult>(
@@ -74,26 +81,31 @@ export function usePlinkoGame() {
 
 			queryClient.setQueryData(["casino-balance"], { balance: result.balance });
 
-			pendingResultRef.current = {
-				multiplier: result.multiplier,
-				win: result.win,
-				bucket: result.finalBucket,
+			const ballId = nextBallId.current++;
+			const newBall: ActiveBall = {
+				id: ballId,
+				path: result.path,
+				result: {
+					multiplier: result.multiplier,
+					win: result.win,
+					bucket: result.finalBucket,
+				},
 			};
-			setBallPath(result.path);
+
+			setActiveBalls((prev) => [...prev, newBall]);
 		} catch (e: unknown) {
 			const message =
 				e instanceof Error
 					? e.message
 					: "Something went wrong. Please try again.";
 			setError(message);
-			setIsPlaying(false);
+		} finally {
+			isRequesting.current = false;
 		}
 	};
 
-	const isAnimating = ballPath !== null && !showResult;
-	const canPlay =
-		!isPlaying && !isAnimating && bet > 0 && bet <= balance && !error;
-	const activeBucketIdx = lastResult?.bucket ?? null;
+	const hasActiveBalls = activeBalls.length > 0;
+	const canPlay = bet > 0 && bet <= balance && !error;
 
 	return {
 		// config
@@ -105,17 +117,15 @@ export function usePlinkoGame() {
 		setDifficulty,
 		// state
 		balance,
-		isPlaying,
-		isAnimating,
+		hasActiveBalls,
 		canPlay,
 		lastResult,
 		showResult,
-		activeBucketIdx,
 		error,
 		clearError: () => setError(null),
-		// animation bridge
-		ballPath,
-		onAnimationComplete,
+		// multi-ball
+		activeBalls,
+		onBallComplete,
 		play,
 	};
 }
