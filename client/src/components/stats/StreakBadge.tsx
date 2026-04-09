@@ -1,14 +1,7 @@
-/* ============================================================================
-   StreakBadge
-   Visual display of the current win or loss streak.
-   One responsibility: render a single streak indicator. No data fetching.
-   ============================================================================ */
-
 import { Flame, Snowflake } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StreakBadgeProps {
-	/** Positive = win streak, negative = loss streak, 0 = neutral */
 	currentStreak: number;
 	longestWinStreak: number;
 	longestLossStreak: number;
@@ -24,47 +17,31 @@ export function StreakBadge({
 	const abs = Math.abs(currentStreak);
 
 	return (
-		<div className="flex flex-col gap-3">
-			{/* Current streak pill */}
-			<div
-				className={cn(
-					"flex items-center gap-3 rounded-xl border px-4 py-3",
-					isWin
-						? "border-emerald-500/25 bg-emerald-500/8"
-						: isLoss
-							? "border-red-500/25 bg-red-500/8"
-							: "border-border bg-muted/30",
-				)}
-			>
-				{/* Icon */}
+		<div className="flex flex-col gap-4">
+			{/* Current */}
+			<div className="flex items-center gap-3">
 				<div
 					className={cn(
-						"flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+						"flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
 						isWin
-							? "bg-emerald-500/15 text-emerald-400"
+							? "bg-emerald-500/10 text-emerald-400"
 							: isLoss
-								? "bg-red-500/15 text-red-400"
-								: "bg-muted/50 text-muted-foreground",
+								? "bg-red-500/10 text-red-400"
+								: "bg-muted text-muted-foreground",
 					)}
 				>
-					{isWin ? (
-						<Flame className="h-5 w-5" />
-					) : isLoss ? (
+					{isLoss ? (
 						<Snowflake className="h-5 w-5" />
 					) : (
-						<Flame className="h-5 w-5 opacity-30" />
+						<Flame className="h-5 w-5" />
 					)}
 				</div>
-
-				{/* Label + value */}
-				<div className="flex flex-col min-w-0">
-					<span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-						Aktualny streak
-					</span>
-					<div className="flex items-baseline gap-1.5 mt-0.5">
+				<div>
+					<div className="text-xs text-muted-foreground">Aktualny streak</div>
+					<div className="flex items-baseline gap-1.5">
 						<span
 							className={cn(
-								"text-2xl font-extrabold font-mono leading-none",
+								"text-2xl font-bold font-mono",
 								isWin
 									? "text-emerald-400"
 									: isLoss
@@ -74,106 +51,35 @@ export function StreakBadge({
 						>
 							{abs}
 						</span>
-						<span
-							className={cn(
-								"text-xs font-semibold",
-								isWin
-									? "text-emerald-400/70"
-									: isLoss
-										? "text-red-400/70"
-										: "text-muted-foreground",
-							)}
-						>
-							{abs === 1
-								? isWin
-									? "wygrana"
-									: isLoss
-										? "przegrana"
-										: "rund"
-								: isWin
-									? "wygrane z rzędu"
-									: isLoss
-										? "przegrane z rzędu"
-										: "rund"}
+						<span className="text-xs text-muted-foreground">
+							{isWin ? "wygrane z rzędu" : isLoss ? "przegrane z rzędu" : "—"}
 						</span>
 					</div>
 				</div>
+			</div>
 
-				{/* Flame dots for intensity (up to 5) */}
-				{abs > 0 && (
-					<div className="ml-auto flex items-center gap-0.5">
-						{Array.from({ length: Math.min(abs, 5) }).map((_, i) => (
-							<div
-								key={i}
-								className={cn(
-									"h-1.5 w-1.5 rounded-full",
-									isWin ? "bg-emerald-400" : "bg-red-400",
-									i >= 3 && "opacity-60",
-									i >= 4 && "opacity-30",
-								)}
-							/>
-						))}
-						{abs > 5 && (
-							<span
-								className={cn(
-									"text-[10px] font-bold ml-1",
-									isWin ? "text-emerald-400" : "text-red-400",
-								)}
-							>
-								+{abs - 5}
-							</span>
-						)}
+			{/* Records */}
+			<div className="grid grid-cols-2 gap-4 text-sm">
+				<div>
+					<div className="text-xs text-muted-foreground mb-0.5">
+						Najlepszy streak
 					</div>
-				)}
-			</div>
-
-			{/* All-time records row */}
-			<div className="grid grid-cols-2 gap-2">
-				<RecordTile
-					label="Najlepszy streak"
-					value={longestWinStreak}
-					unit="wygranych"
-					variant="win"
-				/>
-				<RecordTile
-					label="Najgorszy streak"
-					value={longestLossStreak}
-					unit="przegranych"
-					variant="loss"
-				/>
-			</div>
-		</div>
-	);
-}
-
-/* ── Record tile ─────────────────────────────────────────────────────────── */
-
-function RecordTile({
-	label,
-	value,
-	unit,
-	variant,
-}: {
-	label: string;
-	value: number;
-	unit: string;
-	variant: "win" | "loss";
-}) {
-	return (
-		<div className="flex flex-col gap-1 rounded-lg border border-border bg-muted/20 px-3 py-2.5">
-			<span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-				{label}
-			</span>
-			<div className="flex items-baseline gap-1">
-				<span
-					className={cn(
-						"text-lg font-extrabold font-mono leading-none",
-						variant === "win" ? "text-emerald-400" : "text-red-400",
-					)}
-				>
-					{value}
-				</span>
-				<span className="text-[10px] text-muted-foreground">{unit}</span>
+					<span className="text-lg font-bold font-mono text-emerald-400">
+						{longestWinStreak}
+					</span>
+					<span className="text-xs text-muted-foreground ml-1">wygranych</span>
+				</div>
+				<div>
+					<div className="text-xs text-muted-foreground mb-0.5">
+						Najgorszy streak
+					</div>
+					<span className="text-lg font-bold font-mono text-red-400">
+						{longestLossStreak}
+					</span>
+					<span className="text-xs text-muted-foreground ml-1">
+						przegranych
+					</span>
+				</div>
 			</div>
 		</div>
 	);

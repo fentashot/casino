@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { generateIdempotencyKey } from "@/games/roulette/utils";
 import { api, apiRequest } from "@/lib/api";
 import type { PlinkoPlayResult } from "@/lib/plinko/api";
@@ -33,6 +33,8 @@ export function usePlinkoGame() {
 
 	// Consumed by the canvas hook to trigger the highlight after animation
 	const pendingResultRef = useRef<PlinkoResult | null>(null);
+	const pendingBalanceRef = useRef<number | null>(null);
+	const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const changeRows = (next: number) => {
 		setRows(next);
@@ -42,12 +44,37 @@ export function usePlinkoGame() {
 		setError(null);
 	};
 
-	const onAnimationComplete = useCallback(() => {
+	const applyResult = useCallback(() => {
 		const result = pendingResultRef.current;
 		if (!result) return;
+
+		if (safetyTimeoutRef.current) {
+			clearTimeout(safetyTimeoutRef.current);
+			safetyTimeoutRef.current = null;
+		}
+
+		if (pendingBalanceRef.current !== null) {
+			queryClient.setQueryData(["casino-balance"], {
+				balance: pendingBalanceRef.current,
+			});
+			pendingBalanceRef.current = null;
+		}
+
+		pendingResultRef.current = null;
 		setLastResult(result);
 		setShowResult(true);
 		setIsPlaying(false);
+	}, [queryClient]);
+
+	const onAnimationComplete = useCallback(() => {
+		applyResult();
+	}, [applyResult]);
+
+	// Cleanup safety timeout on unmount
+	useEffect(() => {
+		return () => {
+			if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current);
+		};
 	}, []);
 
 	const play = async () => {
@@ -58,6 +85,9 @@ export function usePlinkoGame() {
 		setBallPath(null);
 		setError(null);
 		pendingResultRef.current = null;
+
+		// Optimistically deduct bet immediately
+		queryClient.setQueryData(["casino-balance"], { balance: balance - bet });
 
 		try {
 			const result = await apiRequest<PlinkoPlayResult>(
@@ -72,7 +102,7 @@ export function usePlinkoGame() {
 				"Something went wrong. Please try again.",
 			);
 
-			queryClient.setQueryData(["casino-balance"], { balance: result.balance });
+			pendingBalanceRef.current = result.balance;
 
 			pendingResultRef.current = {
 				multiplier: result.multiplier,
@@ -80,7 +110,13 @@ export function usePlinkoGame() {
 				bucket: result.finalBucket,
 			};
 			setBallPath(result.path);
+
+			// Safety timeout — force-apply result if animation never fires
+			if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current);
+			safetyTimeoutRef.current = setTimeout(applyResult, 10_000);
 		} catch (e: unknown) {
+			// Rollback optimistic balance deduction
+			queryClient.setQueryData(["casino-balance"], { balance });
 			const message =
 				e instanceof Error
 					? e.message

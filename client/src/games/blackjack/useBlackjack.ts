@@ -150,7 +150,7 @@ export function useBlackjack(initialBalance = 0) {
 			}
 
 			if (msg.type === "state") {
-				syncBalance(msg.payload.balance);
+				setTimeout(() => syncBalance(msg.payload.balance), 100);
 
 				if (msg.payload.game === null) {
 					setServerGame(null);
